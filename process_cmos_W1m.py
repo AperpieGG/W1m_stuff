@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 import os
 from datetime import datetime, timedelta
-from calibration_images import reduce_images
+from calibration_images_W1m import reduce_images
 from utils import (get_location, wcs_phot, _detect_objects_sep, get_catalog,
                    extract_airmass_and_zp, get_light_travel_times)
 import json
@@ -233,16 +233,16 @@ def main():
             else:
                 phot_table = vstack([phot_table, frame_output])
 
-            logging.info(f"Finished photometry for {filename}")
+            logging.info(f"Finished photometry for {filename}\n")
 
         # Save the photometry for the current prefix
         if phot_table is not None:
             phot_table.write(phot_output_filename, overwrite=True)
-            logging.info(f"Saved photometry for prefix {prefix} to {phot_output_filename}")
+            logging.info(f"Saved photometry for prefix {prefix} to {phot_output_filename}\n")
         else:
-            logging.info(f"No photometry data for prefix {prefix}.")
+            logging.info(f"No photometry data for prefix {prefix}.\n")
 
-    logging.info("Done!")
+    logging.info("Done!\n")
 
 
 if __name__ == "__main__":
