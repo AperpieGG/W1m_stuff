@@ -106,7 +106,8 @@ if __name__ == "__main__":
             object_keyword = hdulist[0].header.get('OBJECT', '')
             if object_keyword.startswith(prefix):
                 if "_cat" not in fits_file and fits_file != ref_image:
-                    if 'CTYPE1' in hdulist[0].header and 'CTYPE2' in hdulist[0].header and 'ZP_ORDER' in hdulist[0].header:
+                    if 'CTYPE1' in hdulist[0].header and 'CTYPE2' in hdulist[0].header and 'ZP_ORDER' in hdulist[
+                        0].header:
                         print(f"Image {fits_file} is already solved. Skipping..\n")
                         continue
 
@@ -125,7 +126,7 @@ if __name__ == "__main__":
                     result = os.system(cmd2)
 
                     if result != 0:
-                        print(f"Failed to solve the image {fits_file}. Exiting the script.")
-                        exit(1)
+                        print(f"Failed to solve the image {fits_file}. Skipping to the next image.\n")
+                        continue  # Skip this image and move to the next
                     else:
                         print(f"Successfully solved the image {fits_file}.\n")
