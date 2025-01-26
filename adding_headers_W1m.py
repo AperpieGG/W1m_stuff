@@ -5,7 +5,7 @@
 This script adds headers to the FITS files in the specified directory
 
 Usage:
-python adding_headers.py
+python adding_headers_W1m.py
 
 """
 import argparse
