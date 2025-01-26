@@ -5,11 +5,8 @@ and try solving them one by one
 """
 import os
 import glob as g
-from astropy.io import fits
 import argparse as ap
-
-# pylint: disable=invalid-name
-# pylint: disable=no-member
+from astropy.io import fits
 
 
 def arg_parse():
@@ -29,118 +26,106 @@ def arg_parse():
                    help='output the matched catalog with basic photometry',
                    action='store_true',
                    default=False)
+    p.add_argument('--camera',
+                   help='camera type (ccd or cmos)',
+                   type=str,
+                   default='ccd')
     return p.parse_args()
 
 
 if __name__ == "__main__":
-    # Parse command-line arguments
+    # Grab command line args
     args = arg_parse()
 
-    # Get the current working directory
-    parent_directory = os.getcwd()
+    # Set scale values based on camera type
+    if args.camera.lower() == 'ccd':
+        scale_min = "4.5"
+        scale_max = "5.5"
+    else:
+        scale_min = "3.5"
+        scale_max = "4.5"
 
-    # Get a list of subdirectories inside the parent directory
-    subdirectories = [name for name in os.listdir(parent_directory) if
-                      os.path.isdir(os.path.join(parent_directory, name))]
+    # Get a list of all FITS images, exclude whatever has catalog name in
+    all_fits = sorted(g.glob("*.fits"))
+    all_fits = [f for f in all_fits if "_cat" not in f]
 
-    print('The subdirectories are:', subdirectories)
+    if not all_fits:
+        print("No FITS files found.")
+        exit(1)
 
-    # Iterate over each subdirectory
-    for subdirectory in subdirectories:
-        if subdirectory.startswith("action") and subdirectory.endswith("_observeField"):
-            # Form the full path to the subdirectory
-            subdirectory_path = os.path.join(parent_directory, subdirectory)
+    # Select the first image as the reference
+    ref_image = all_fits[0]
+    base_name = ref_image.split('.fits')[0]
+    prefix = fits.getheader(ref_image)['OBJECT']
+    cat_file = f"{prefix}_catalog.fits"
 
-            # Change the working directory to the subdirectory
-            os.chdir(subdirectory_path)
+    # Get coordinates from the reference image header
+    with fits.open(ref_image) as ff:
+        ra = str(ff[0].header['CMD_RA'])
+        dec = str(ff[0].header['CMD_DEC'])
+        epoch = str(ff[0].header['DATE-OBS'])
+        box_size = "3"  # Adjustable
 
-            print(f"Processing subdirectory: {subdirectory_path}")
+    # Create the catalog if it doesn't exist
+    if not os.path.exists(cat_file):
+        print(f'Did not find catalog file: {cat_file}')
+        cmd_args = ["/Users/u5500483/Documents/GitHub/W1m_stuff/make_ref_catalog_W1m.py",
+                    ra, dec, box_size, box_size, epoch, cat_file]
+        cmd = " ".join(cmd_args)
+        os.system(cmd)
+        print("Catalog created for image {} with prefix: {}\n".format(ref_image, prefix))
 
-            # Get a list of all FITS images
-            all_fits = sorted(g.glob("*.fits"))
+    # Solve reference image with catalog file
+    if os.path.exists(cat_file):
+        print(f'Solving reference image: {ref_image}')
+        cmd2_args = ["/Users/u5500483/Documents/GitHub/W1m_stuff/solve_ref_images_W1m.py",
+                     cat_file, ref_image, "--scale_min", scale_min, "--scale_max", scale_max]
 
-            # Filter the FITS images based on criteria
-            ref_images = []
-            for fits_file in all_fits:
-                if fits_file.startswith("IMAGE") and fits_file.endswith(".fits") and not fits_file.endswith(".fits.bz2"):
-                    header = fits.getheader(fits_file)
-                    if header.get("IMGCLASS") == "SCIENCE":
-                        ref_images.append(fits_file)
+        if args.save_matched_cat:
+            cmd2_args.append("--save_matched_cat")
+        if args.defocus is not None:
+            cmd2_args.append(f"--defocus {args.defocus:.2f}")
+        if args.force3rd:
+            cmd2_args.append("--force3rd")
 
-            ref_image = ref_images[0]
+        cmd2 = " ".join(cmd2_args)
+        result = os.system(cmd2)
 
-            if ref_image is None:
-                print("No reference image found for subdirectory:", subdirectory)
-                continue
+        if result != 0:  # Exit if the reference image fails to solve
+            print(f"Failed to solve the reference image {ref_image}. Exiting the script.")
+            exit(1)
+        else:
+            print(f"Successfully solved the reference image {ref_image}.\n")
 
-            print("Reference image found:", ref_image)
-            base_name = ref_image.split('.fits')[0]
-            print("Base name:", base_name)
-            prefix = fits.getheader(ref_image)['OBJECT']
-            cat_file = f"{prefix}_catalog.fits"
+    # Iterate and solve remaining FITS images
+    for fits_file in all_fits:
+        if fits_file == ref_image:
+            continue
 
-            # Get the coords from the header of the first FITS file
-            with fits.open(ref_image) as ff:
-                ra = str(ff[0].header['CMD_RA'])
-                dec = str(ff[0].header['CMD_DEC'])
-                epoch = str(ff[0].header['DATE-OBS'])
-                box_size = "2.8"  # You can adjust this as needed
+        with fits.open(fits_file) as hdulist:
+            object_keyword = hdulist[0].header.get('OBJECT', '')
+            if object_keyword.startswith(prefix):
+                if "_cat" not in fits_file and fits_file != ref_image:
+                    if 'CTYPE1' in hdulist[0].header and 'CTYPE2' in hdulist[0].header and 'ZP_ORDER' in hdulist[0].header:
+                        print(f"Image {fits_file} is already solved. Skipping..\n")
+                        continue
 
-            if not os.path.exists(cat_file):
-                # call the catalog maker only for the first image of each prefix
-                cmd_args = ["/home/ops/refcatpipe2/cmos/make_ref_catalog_ccd.py",
-                            ra, dec, box_size, box_size, epoch, cat_file]
-                cmd = " ".join(cmd_args)
-                os.system(cmd)
-                print("Catalog created for image:", ref_image)
+                    print(f"Solving image {fits_file} for prefix: {prefix}\n")
+                    cmd2_args = ["/Users/u5500483/Documents/GitHub/W1m_stuff/solve_ref_images_W1m.py",
+                                 cat_file, fits_file, "--scale_min", scale_min, "--scale_max", scale_max]
 
-            if os.path.exists(cat_file):
-                print("Found cat file:", cat_file)
-                print()
-                print("Solving image:", ref_image)
+                    if args.save_matched_cat:
+                        cmd2_args.append("--save_matched_cat")
+                    if args.defocus is not None:
+                        cmd2_args.append(f"--defocus {args.defocus:.2f}")
+                    if args.force3rd:
+                        cmd2_args.append("--force3rd")
 
-                # Solve the reference image with this catalog file
-                cmd2_args = ["/home/ops/refcatpipe2/cmos/solve_ref_images_ccd.py",
-                             cat_file, ref_image]
+                    cmd2 = " ".join(cmd2_args)
+                    result = os.system(cmd2)
 
-                # Add optional arguments based on command-line arguments
-                if args.save_matched_cat:
-                    cmd2_args.append("--save_matched_cat")
-                if args.defocus is not None:
-                    cmd2_args.append("--defocus {:.2f}".format(args.defocus))
-                if args.force3rd:
-                    cmd2_args.append("--force3rd")
-
-                cmd2 = " ".join(cmd2_args)
-                os.system(cmd2)
-                print("Solved image:", ref_image)
-
-                # Now, iterate over all FITS files again and solve for each image
-                for fits_file in ref_images:
-                    with fits.open(fits_file) as hdulist:
-                        object_keyword = hdulist[0].header.get('OBJECT', '')
-                        if "_cat" not in fits_file and fits_file != ref_image:
-                            # Check if keywords exist
-                            if 'CTYPE1' in hdulist[0].header and 'CTYPE2' in hdulist[0].header and 'ZP_ORDER' in hdulist[0].header:
-                                print("Image {} is already solved. Skipping..\n".format(fits_file))
-                                continue
-
-                            print("Solving image {} \n".format(fits_file))
-                            # Solve the image with the same catalog file
-                            cmd2_args = ["/home/ops/refcatpipe2/cmos/solve_ref_images_ccd.py",
-                                         cat_file, fits_file]
-
-                            # Add optional arguments based on command-line arguments
-                            if args.save_matched_cat:
-                                cmd2_args.append("--save_matched_cat")
-                            if args.defocus is not None:
-                                cmd2_args.append("--defocus {:.2f}".format(args.defocus))
-                            if args.force3rd:
-                                cmd2_args.append("--force3rd")
-
-                            cmd2 = " ".join(cmd2_args)
-                            os.system(cmd2)
-                            print("Solved image {}\n".format(fits_file))
-
-            # Move back to the parent directory for the next subdirectory iteration
-            os.chdir(parent_directory)
+                    if result != 0:
+                        print(f"Failed to solve the image {fits_file}. Exiting the script.")
+                        exit(1)
+                    else:
+                        print(f"Successfully solved the image {fits_file}.\n")
