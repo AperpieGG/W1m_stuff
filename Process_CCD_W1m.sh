@@ -15,21 +15,19 @@ for observe_dir in $(find . -maxdepth 1 -type d -name "action*_observeField"); d
     echo "Changed to directory: $(pwd)"
 
     # Run the initial Python scripts
-    python /home/ops/ngcmos/unzip_fits.py     # unzips the FITS files and deletes the bz2 extension
-    python /home/ops/ngcmos/trim_ccd.py
+    python /home/ops/ngcmos/unzip_fits_W1m.py     # unzips the FITS files and deletes the bz2 extension
+    python /home/ops/ngcmos/trim_ccd_W1m.py
     # add this point you have to sent the catalog input file for phot.
-    python /home/ops/refcatpipe2/cmos/simple_wrapper.py --camera ccd
-    python /home/ops/ngcmos/check_ccd.py
-    python /home/ops/ngcmos/adding_headers.py
-    python /home/ops/ngcmos/calibration_images_ccd.py
-    python /home/ops/ngcmos/process_ccd.py
+    python /home/ops/refcatpipe2/cmos/simple_wrapper_W1m.py --camera ccd
+    python /home/ops/ngcmos/check_ccd_W1m.py
+    python /home/ops/ngcmos/adding_headers_W1M.py
+    python /home/ops/ngcmos/calibration_images_ccd_W1m.py
+    python /home/ops/ngcmos/process_ccd_W1m.py
 
 #    # Run the additional Python scripts within this subdirectory
-    python /home/ops/fwhm_stars/fwhm_batches.py --size 13.5 --cam CCD   # make plot and save to fwhm_results.json
-    python /home/ops/ngcmos/relative_phot_dev.py --aper 4
-    python /home/ops/ngcmos/measure_zp.py --aper 4
-    python /home/ops/fwhm_stars/best_fwhm.py --size 13.5                # save to fwhm_positions.json
-    python /home/ops/ngcmos/zip_fits.py                                 # zip the FITS files to bz2 and delete .fits files
+    python /home/ops/ngcmos/relative_phot_dev_W1m.py --aper 4
+    python /home/ops/ngcmos/measure_zp_W1m.py --aper 4
+    python /home/ops/ngcmos/zip_fits_W1m.py                                 # zip the FITS files to bz2 and delete .fits files
 
     # Return to the parent directory
     cd - || exit
