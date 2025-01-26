@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from astroquery.vizier import Vizier
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
@@ -236,7 +238,7 @@ def fetch_catalog_vizier(ra_center, dec_center, box_width, box_height,
     Vizier.ROW_LIMIT = -1
     vizier_query = Vizier(
         columns=["TIC", "GAIA", "RAJ2000", "DEJ2000", "Tmag", "Gmag", "BPmag", "RPmag", "pmRA", "pmDE"],
-        column_filters={"Gmag": "<16"}  # Filter for Gaia magnitude < 16
+        column_filters={"Gmag": "<18"}  # Filter for Gaia magnitude < 16
     )
     vizier_query.ROW_LIMIT = -1  # Set the row limit after creating the Vizier instance
     try:
@@ -354,7 +356,4 @@ if __name__ == "__main__":
     cat, cols, types = fetch_catalog_vizier(args.ra, args.dec, args.box_width, args.box_height,
                                             args.epoch, args.output, args.blend_delta)
 
-    hdul = fits.open("output_catalog.fits")
 
-    # Check the column names in the first extension
-    print(hdul[1].columns)
