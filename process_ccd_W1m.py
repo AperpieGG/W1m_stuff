@@ -214,7 +214,7 @@ def main():
         phot_cat, _ = get_catalog(f"{directory}/{prefix}_catalog_input.fits", ext=1)
         logging.info(f"Found catalog with name {prefix}_catalog_input.fits")
         # Convert RA and DEC to pixel coordinates using the WCS information from the header
-        phot_x, phot_y = WCS(frame_hdr).all_world2pix(phot_cat['ra_deg_corr'], phot_cat['dec_deg_corr'], 1)
+        phot_x, phot_y = WCS(frame_hdr).all_world2pix(phot_cat['RA_CORR'], phot_cat['DEC_CORR'], 1)
 
         # Do time conversions - one time value per format per target
         half_exptime = frame_hdr['EXPTIME'] / 2.
@@ -223,8 +223,8 @@ def main():
         time_jd = Time(time_isot.jd, format='jd', scale='utc', location=get_location())
         # Correct to mid-exposure time
         time_jd = time_jd + half_exptime * u.second
-        ra = phot_cat['ra_deg_corr']
-        dec = phot_cat['dec_deg_corr']
+        ra = phot_cat['RA_CORR']
+        dec = phot_cat['DEC_CORR']
         ltt_bary, ltt_helio = get_light_travel_times(ra, dec, time_jd)
         time_bary = time_jd.tdb + ltt_bary
         time_helio = time_jd.utc + ltt_helio
@@ -233,8 +233,8 @@ def main():
         logging.info(f"Found {len(frame_ids)} sources")
 
         # create the photometry table
-        frame_preamble = Table([frame_ids, phot_cat['gaia_id'], phot_cat['Tmag'], phot_cat['tic_id'],
-                                phot_cat['gaiabp'], phot_cat['gaiarp'], time_jd.value, time_bary.value,
+        frame_preamble = Table([frame_ids, phot_cat['GAIA'], phot_cat['Tmag'], phot_cat['TIC'],
+                                phot_cat['BPmag'], phot_cat['RPmag'], time_jd.value, time_bary.value,
                                 time_helio.value, phot_x, phot_y,
                                 [airmass] * len(phot_x), [zp] * len(phot_x)],
                                names=("frame_id", "gaia_id", "Tmag", "tic_id", "gaiabp", "gaiarp", "jd_mid",
