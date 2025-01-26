@@ -47,7 +47,12 @@ if __name__ == "__main__":
 
     # Get a list of all FITS images, exclude whatever has catalog name in
     all_fits = sorted(g.glob("*.fits"))
+    print(f"Found {len(all_fits)} FITS files.")
     all_fits = [f for f in all_fits if "_cat" not in f]
+    # exclude words in the fits file
+    excluded_list = ["bias", "dark", "flat", "morning", "evening", "catalog", "phot"]
+    all_fits = [f for f in all_fits if not any(word in f.lower() for word in excluded_list)]
+    print(f"Found {len(all_fits)} FITS files after excluding not suitable files.")
 
     if not all_fits:
         print("No FITS files found.")
@@ -60,11 +65,18 @@ if __name__ == "__main__":
     cat_file = f"{prefix}_catalog.fits"
 
     # Get coordinates from the reference image header
-    with fits.open(ref_image) as ff:
-        ra = str(ff[0].header['CMD_RA'])
-        dec = str(ff[0].header['CMD_DEC'])
-        epoch = str(ff[0].header['DATE-OBS'])
-        box_size = "3"  # Adjustable
+    if args.camera.lower() == 'ccd':
+        with fits.open(ref_image) as ff:
+            ra = str(ff[0].header['CMD_RA'])
+            dec = str(ff[0].header['CMD_DEC'])
+            epoch = str(ff[0].header['DATE-OBS'])
+            box_size = "3"  # Adjustable
+    else:
+        with fits.open(ref_image) as ff:
+            ra = str(ff[0].header['TELRAD'])
+            dec = str(ff[0].header['TELDECD'])
+            epoch = str(ff[0].header['DATE-OBS'])
+            box_size = "3"  # Adjustable
 
     # Create the catalog if it doesn't exist
     if not os.path.exists(cat_file):
