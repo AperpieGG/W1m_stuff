@@ -210,8 +210,8 @@ def _wcs_from_table(objects, frame_shape, scale_low, scale_high, estimate_coord=
             objects.write(xyls_path, format='fits')
 
             astrometry_args = [
-                '/usr/bin/solve-field' if os.path.isfile(
-                    '/usr/bin/solve-field') else '/usr/local/astrometry.net/bin/solve-field',
+                '/opt/homebrew/bin/solve-field' if os.path.isfile(
+                    '/opt/homebrew/bin/solve-field') else '/usr/local/astrometry.net/bin/solve-field',
                 '--no-plots',
                 '--scale-units', 'arcsecperpix',
                 '--no-tweak', '--no-remove-lines',  # '--no-fits2fits',
@@ -225,6 +225,8 @@ def _wcs_from_table(objects, frame_shape, scale_low, scale_high, estimate_coord=
                     '--dec', str(estimate_coord.dec.to_value(u.deg)),
                     '--radius', str(estimate_coord_radius.to_value(u.deg)),
                 ]
+            else:
+                print("No RA/Dec constraints applied.")
 
             subprocess.check_call(astrometry_args, cwd=tempdir,
                                   timeout=timeout)
@@ -284,7 +286,7 @@ def check_wcs_corners(wcs_header, objects, catalog, frame_shape, check_tile_size
                     (frame_shape[0] - check_tile_size) // 2, (frame_shape[0] + check_tile_size) // 2]
     }
 
-    wcs_x, wcs_y = WCS(wcs_header).all_world2pix(catalog['ra_deg_corr'], catalog['dec_deg_corr'], 1)
+    wcs_x, wcs_y = WCS(wcs_header).all_world2pix(catalog['RA_CORR'], catalog['DEC_CORR'], 1)
     delta_x = np.abs(wcs_x - objects['X'])
     delta_y = np.abs(wcs_y - objects['Y'])
     delta_xy = np.sqrt(delta_x ** 2 + delta_y ** 2)
@@ -331,7 +333,7 @@ def fit_hdu_distortion(wcs_header, objects, catalog, force3rd):
     # The SIP paper's U and V coordinates are found by applying the core (i.e. CD matrix)
     # transformation to the RA and Dec, ignoring distortion; relative to CRPIX
     wcs = WCS(wcs_header)
-    U, V = wcs.wcs_world2pix(catalog['ra_deg_corr'], catalog['dec_deg_corr'], 1)
+    U, V = wcs.wcs_world2pix(catalog['RA_CORR'], catalog['DEC_CORR'], 1)
     U -= wcs_header['CRPIX1']
     V -= wcs_header['CRPIX2']
 
@@ -551,12 +553,13 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
         frame_exptime = float(frame.header['EXPTIME'])
 
     # cut the catalog to those with gaia_ids and Tmag <= 15
-    gids = catalog['gaia_id']
+    gids = catalog['GAIA']
     tmag = catalog['Tmag']
     # make a cross-match mask
     cm_mask = np.where(((~np.isnan(gids)) & (tmag <= 15) & (tmag >= 10)))[0]
     # make a trimmed catalog for cross-matching
     catalog_cm = catalog[cm_mask]
+    catalog_cm = catalog_cm[~np.isnan(catalog_cm['RA_CORR']) & ~np.isnan(catalog_cm['DEC_CORR'])]
 
     # Prepare image
     # check if we have an overscan to remove
@@ -623,8 +626,8 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
         objects['RA'] = object_ra
         objects['DEC'] = object_dec
 
-        cat_coords = SkyCoord(ra=catalog_cm['ra_deg_corr'] * u.degree,
-                              dec=catalog_cm['dec_deg_corr'] * u.degree)
+        cat_coords = SkyCoord(ra=catalog_cm['RA_CORR'] * u.degree,
+                              dec=catalog_cm['DEC_CORR'] * u.degree)
 
         # Iteratively improve the cross-match, WCS fit, and ZP estimation
         i = 0
@@ -637,8 +640,8 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
             # add check here for matches, try to catch bad catalog
             print("Number of matches: {}".format(len(match_idx)))
 
-            wcs_x, wcs_y = WCS(wcs_header).all_world2pix(matched_cat['ra_deg_corr'],
-                                                         matched_cat['dec_deg_corr'], 1)
+            wcs_x, wcs_y = WCS(wcs_header).all_world2pix(matched_cat['RA_CORR'],
+                                                         matched_cat['DEC_CORR'], 1)
             delta_x = np.abs(wcs_x - objects['X'])
             delta_y = np.abs(wcs_y - objects['Y'])
             delta_xy = np.sqrt(delta_x ** 2 + delta_y ** 2)
@@ -646,7 +649,7 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
             # how far away is the median cross match?
             print("Median delta_xy: {}".format(np.median(delta_xy)))
 
-            zp_mask = np.logical_or(matched_cat['blended'], delta_xy > 10)
+            zp_mask = np.logical_or(matched_cat['BLENDED'], delta_xy > 10)
             zp_delta_mag = matched_cat['Tmag'] + 2.5 * np.log10(objects['FLUX'] / frame_exptime)
             zp_mean, _, zp_stddev = sigma_clipped_stats(zp_delta_mag, mask=zp_mask, sigma=zp_clip_sigma)
 
@@ -682,7 +685,7 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
                 break
 
         if np.median(delta_xy) > 0.5:
-            print("Median delta_xy is too high, skipping...")
+            print(f"Skipping frame {input_path}: median delta_xy={np.median(delta_xy):.3f}")
             return None, None, None, None
 
         line2 = '{} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}'.format(np.sum(zp_filter),
@@ -705,7 +708,7 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
         hdu_list = [output]
 
         # Refine ZP using a 2d polynomial fit
-        fit_filter = np.logical_not(np.logical_or(matched_cat['blended'], delta_xy > 0.5))
+        fit_filter = np.logical_not(np.logical_or(matched_cat['BLENDED'], delta_xy > 0.5))
         zp_poly, _ = fit_zeropoint_polynomial(matched_cat[fit_filter], objects[fit_filter], frame_exptime)
 
         # save the matched_cat for comparing fluxes to magnitudes
@@ -726,16 +729,6 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
     output.header['ZPCALCN2'] = np.sum(fit_filter)
 
     # Version 4:
-    # - Calculates 2D zero point model
-    # Version 5:
-    # - Supports pre-filtered reference table
-    # - Stores output ZP to 3dp
-    # Version 6:
-    # - Performs 2D WCS fit
-    # - Added BACK-LVL header
-    # Version 7:
-    # - New WCS fitting implementation
-    # - Using Sep / SExtractor fluxes
     output.header['REDVER'] = 7
 
     # output the updated solved fits image
@@ -825,14 +818,14 @@ def update_master_catalog(catalog, wcs_list, cat_file):
     None
     """
     # keep a mask of images that have been on silicon
-    on_chip = np.zeros(len(catalog['ra_deg_corr']))
+    on_chip = np.zeros(len(catalog['RA_CORR']))
 
     # now loop over the wcs headers and check if each object is on chip in them
     for w in wcs_list:
         if w is not None:
             # now check the wcs driven pixel positions
-            x, y = WCS(w).all_world2pix(catalog['ra_deg_corr'],
-                                        catalog['dec_deg_corr'], 1)
+            x, y = WCS(w).all_world2pix(catalog['RA_CORR'],
+                                        catalog['DEC_CORR'], 1)
             mask = np.where(((x > 50) & (x < 1998) & (y > 50) & (y < 1998)))[0]
             on_chip[mask] += 1
 
@@ -881,13 +874,13 @@ def write_input_catalog(catalog, wcs_list, input_cat_file):
     # The target is brighter than Gmag=16 OR it's in the guest catalogs
     # AND it's on chip in any reference image
 
-    on_chip = np.zeros(len(catalog['ra_deg_corr']))
+    on_chip = np.zeros(len(catalog['RA_CORR']))
 
     for w in wcs_list:
         if w is not None:
             # now check the wcs driven pixel positions
-            x, y = WCS(w).all_world2pix(catalog['ra_deg_corr'],
-                                        catalog['dec_deg_corr'], 1)
+            x, y = WCS(w).all_world2pix(catalog['RA_CORR'],
+                                        catalog['DEC_CORR'], 1)
             mask = np.where(((x > 50) & (x < 1998) & (y > 50) & (y < 1998)))[0]
             on_chip[mask] += 1
 
@@ -905,16 +898,18 @@ def write_input_catalog(catalog, wcs_list, input_cat_file):
     # Exclude stars with 'True' in the 'blended' column
     # blended_mask = np.array([not any(blend) for blend in catalog['blended']])
 
-    mask = np.where((catalog['Tmag'] < 16) & (catalog['on_chip'] == 1.0) & (~catalog['blended']))[0]
+    mask = np.where((catalog['Tmag'] < 16) & (catalog['on_chip'] == 1.0) & (~catalog['BLENDED']))[0]
 
     # mask the catalog and the source indexes
     catalog_clipped = catalog[mask]
+    print(f'Initial catalog length: {len(catalog)}')
+    print(f'Blended, variable and faint stars removed: {len(catalog) - len(catalog_clipped)}')
 
     # create the columns required for photometry, in the correct format
-    input_catalog = Table([catalog_clipped['gaia_id'], catalog_clipped['GAIAmag'], catalog_clipped['tic_id'],
-                           catalog_clipped['Tmag'], catalog_clipped['ra_deg_corr'], catalog_clipped['dec_deg_corr'],
-                           catalog_clipped['on_chip'], catalog_clipped['guest'], catalog_clipped['gaiabp'],
-                           catalog_clipped['gaiarp']])
+    input_catalog = Table([catalog_clipped['GAIA'], catalog_clipped['Gmag'], catalog_clipped['TIC'],
+                           catalog_clipped['Tmag'], catalog_clipped['RA_CORR'], catalog_clipped['DEC_CORR'],
+                           catalog_clipped['on_chip'], catalog_clipped['BPmag'],
+                           catalog_clipped['RPmag']])
 
     # finally save the input catalog
     try:
@@ -955,17 +950,13 @@ def generate_region_file(catalog, cat_file):
     master = []
 
     for row in catalog:
-        ra = row['ra_deg_corr']
-        dec = row['dec_deg_corr']
-        guest = row['guest']
+        ra = row['RA_CORR']
+        dec = row['DEC_CORR']
         on_chip = row['on_chip']
         tmag = row['Tmag']
 
-        if on_chip and (tmag <= 16 or guest):
-            if guest:
-                colour = 'magenta'
-            else:
-                colour = 'green'
+        if on_chip and (tmag <= 16):
+            colour = 'green'
             master.append("circle({},{},15\") # color={}\n".format(ra, dec, colour))
         else:
             colour = 'blue'
@@ -1009,19 +1000,14 @@ def generate_input_region_file(input_catalog, inp):
     input = []
 
     for row in input_catalog:
-        ra = row['ra_deg_corr']
-        dec = row['dec_deg_corr']
-        guest = row['guest']
+        ra = row['RA_CORR']
+        dec = row['DEC_CORR']
         on_chip = row['on_chip']
         tmag = row['Tmag']
-        gaiamag = row['GAIAmag']
+        gaiamag = row['Gmag']
 
-        if on_chip and (tmag <= 16 or guest):
-            # if on_chip and (gaiamag <= 16 or guest):
-            if guest:
-                colour = 'magenta'
-            else:
-                colour = 'green'
+        if on_chip and (tmag <= 16):
+            colour = 'green'
             input.append("circle({},{},15\") # color={}\n".format(ra, dec, colour))
         else:
             pass  # don't plot the non-on-chip stars
@@ -1076,8 +1062,8 @@ if __name__ == "__main__":
 
             # generate vecotrs for quiver plot
             vector_scale = 100
-            wcs_pos_x, wcs_pos_y = WCS(final_wcs).all_world2pix(catalog_matched['ra_deg_corr'],
-                                                                catalog_matched['dec_deg_corr'], 1)
+            wcs_pos_x, wcs_pos_y = WCS(final_wcs).all_world2pix(catalog_matched['RA_CORR'],
+                                                                catalog_matched['DEC_CORR'], 1)
             x_comp = (wcs_pos_x - objects_matched['X']) * vector_scale
             y_comp = (wcs_pos_y - objects_matched['Y']) * vector_scale
 
@@ -1106,8 +1092,8 @@ if __name__ == "__main__":
             ax[2].set_ylabel('Delta XY (pix)')
 
             # plot the residuals versus pmDEC
-            ax[3].semilogy(catalog_matched['pmDEC'], residuals, 'k.')
-            ax[3].set_xlabel('pmDEC (mas)')
+            ax[3].semilogy(catalog_matched['pmDE'], residuals, 'k.')
+            ax[3].set_xlabel('pmDE (mas)')
             ax[3].set_ylabel('Delta XY (pix)')
 
             # plot residuals versus brightness
