@@ -20,7 +20,7 @@ for observe_dir in $(find . -maxdepth 1 -type d -name "action*_observeField"); d
     # add this point you have to sent the catalog input file for phot.
     python /Users/u5500483/Documents/GitHub/W1m_stuff/simple_wrapper_W1m.py --camera ccd
     python /Users/u5500483/Documents/GitHub/W1m_stuff/check_ccd_W1m.py
-    python /Users/u5500483/Documents/GitHub/W1m_stuff/adding_headers_W1M.py
+    python /Users/u5500483/Documents/GitHub/W1m_stuff/adding_headers_W1m.py
     python /Users/u5500483/Documents/GitHub/W1m_stuff/calibration_images_ccd_W1m.py
     python /Users/u5500483/Documents/GitHub/W1m_stuff/process_ccd_W1m.py
 
