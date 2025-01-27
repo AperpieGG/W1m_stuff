@@ -898,7 +898,7 @@ def write_input_catalog(catalog, wcs_list, input_cat_file):
     # Exclude stars with 'True' in the 'blended' column
     # blended_mask = np.array([not any(blend) for blend in catalog['blended']])
 
-    mask = np.where((catalog['Tmag'] < 16) & (catalog['on_chip'] == 1.0) & (~catalog['BLENDED']))[0]
+    mask = np.where((catalog['Tmag'] < 14) & (catalog['on_chip'] == 1.0) & (~catalog['BLENDED']))[0]
 
     # mask the catalog and the source indexes
     catalog_clipped = catalog[mask]
