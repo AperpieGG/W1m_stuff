@@ -47,7 +47,7 @@ warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 
 GAIN = 1.131
 N_OBJECTS_LIMIT = 200
-APERTURE_RADII = [4.9, 5, 6]
+APERTURE_RADII = [2.5, 3, 5]
 RSI = 15
 RSO = 20
 DEFOCUS = 0.0
@@ -209,13 +209,13 @@ def main():
             frame_ids = [filename for i in range(len(phot_x))]
             logging.info(f"Found {len(frame_ids)} sources")
 
-            frame_preamble = Table([frame_ids, phot_cat['GAIA'], phot_cat['Tmag'], phot_cat['TIC'],
+            frame_preamble = Table([frame_ids, phot_cat['Tmag'], phot_cat['TIC'],
                                     phot_cat['BPmag'], phot_cat['RPmag'], time_jd.value, time_bary.value,
-                                    time_helio.value, phot_x, phot_y,
+                                    phot_x, phot_y,
                                     np.array([airmass] * len(phot_x), dtype='float64'),
                                     np.array([zp] * len(phot_x), dtype='float64')],
-                                   names=("frame_id", "gaia_id", "Tmag", "tic_id", "gaiabp", "gaiarp", "jd_mid",
-                                          "jd_bary", "jd_helio", "x", "y", "airmass", "zp"))
+                                   names=("frame_id", "Tmag", "tic_id", "gaiabp", "gaiarp", "jd_mid",
+                                          "jd_bary", "x", "y", "airmass", "zp"))
 
             # Validate column type before stacking
             frame_preamble['zp'] = frame_preamble['zp'].astype('float64', copy=False)
