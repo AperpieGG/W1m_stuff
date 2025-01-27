@@ -3,7 +3,7 @@ import argparse
 from matplotlib import pyplot as plt, ticker
 import json
 import numpy as np
-from utils import plot_images
+from utils_W1m import plot_images
 
 
 def load_rms_mags_data(filename):

@@ -20,8 +20,8 @@ import logging
 from scipy.interpolate import InterpolatedUnivariateSpline as Spline
 
 from astropy.table import Table
-from utils import (plot_images, get_phot_files, read_phot_file,
-                   bin_time_flux_error, expand_and_rename_table)
+from utils_W1m import (plot_images, get_phot_files, read_phot_file,
+                       bin_time_flux_error, expand_and_rename_table)
 
 # Constants for filtering stars
 COLOR_TOLERANCE = 0.2

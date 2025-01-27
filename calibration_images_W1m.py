@@ -24,7 +24,7 @@ from astropy.io import fits
 import numpy as np
 from astropy.time import Time
 import astropy.units as u
-from utils import get_location, get_light_travel_times
+from utils_W1m import get_location, get_light_travel_times
 
 
 def bias(base_path, out_path):

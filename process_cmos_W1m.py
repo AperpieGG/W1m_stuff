@@ -5,8 +5,8 @@ from datetime import datetime, timedelta
 import numpy as np
 
 from calibration_images_W1m import reduce_images
-from utils import (get_location, wcs_phot, _detect_objects_sep, get_catalog,
-                   extract_airmass_and_zp, get_light_travel_times)
+from utils_W1m import (get_location, wcs_phot, _detect_objects_sep, get_catalog,
+                       extract_airmass_and_zp, get_light_travel_times)
 import json
 import warnings
 import logging

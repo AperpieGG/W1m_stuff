@@ -3,7 +3,7 @@ import glob
 import os
 from astropy.io import fits
 import numpy as np
-from utils import find_current_night_directory
+from utils_W1m import find_current_night_directory
 
 calibration_path = "/Users/u5500483/Downloads/DATA_MAC/CMOS/20231212/"
 base_path = "/Users/u5500483/Downloads/DATA_MAC/CMOS/20231212/"

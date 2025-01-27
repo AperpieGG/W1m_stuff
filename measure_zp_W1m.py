@@ -5,7 +5,7 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-from utils import get_phot_files, read_phot_file, plot_images
+from utils_W1m import get_phot_files, read_phot_file, plot_images
 
 plot_images()
 

@@ -14,7 +14,7 @@ import numpy as np
 import os
 import json
 import warnings
-from utils import get_location, get_light_travel_times
+from utils_W1m import get_location, get_light_travel_times
 import astropy.units as u
 from astropy.time import Time
 

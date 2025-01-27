@@ -9,16 +9,13 @@ echo "Starting processing..."
 cat <<EOF > directories.json
 {
   "calibration_paths": [
-    "/Users/u5500483/Downloads/DATA_MAC/CMOS/20231212/",
-    "/home/ops/data/20231212/"
+    "/Users/u5500483/Downloads/DATA_MAC/CMOS/20231212/"
   ],
   "base_paths": [
-    "/Users/u5500483/Downloads/DATA_MAC/CMOS/",
-    "/home/ops/data/"
-  ],
+    "/Users/u5500483/Downloads/DATA_MAC/CMOS/"
+  ]
   "out_paths": [
-    "/Users/u5500483/Downloads/DATA_MAC/CMOS/calibration_images/",
-    "/home/ops/data/calibration_images/"
+    "/Users/u5500483/Downloads/DATA_MAC/CMOS/calibration_images/"
   ]
 }
 EOF
@@ -27,7 +24,7 @@ EOF
 python /Users/u5500483/Documents/GitHub/W1m_stuff/simple_wrapper_W1m.py --camera cmos
 python /Users/u5500483/Documents/GitHub/W1m_stuff/check_cmos_W1m.py
 python /Users/u5500483/Documents/GitHub/W1m_stuff/adding_headers_W1m.py
-#python /home/ops/ngcmos/create_flats.py
+python /Users/u5500483/Documents/GitHub/W1m_stuff/create_flats_W1m.py
 python /Users/u5500483/Documents/GitHub/W1m_stuff/process_cmos_W1m.py
 #python /home/ops/fwhm_stars/fwhm_batches.py --size 11 --cam CMOS # make plot and save to fwhm_results.json
 python /Users/u5500483/Documents/GitHub/W1m_stuff/relative_phot_dev_W1m.py --aper 5

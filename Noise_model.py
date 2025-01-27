@@ -5,7 +5,7 @@ import os
 import json
 import numpy as np
 from astropy.io import fits
-from utils import noise_sources
+from utils_W1m import noise_sources
 
 
 # Constants for noise calculations
