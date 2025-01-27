@@ -1,6 +1,9 @@
 #! /usr/bin/env python
 import os
 from datetime import datetime, timedelta
+
+import numpy as np
+
 from calibration_images_W1m import reduce_images
 from utils import (get_location, wcs_phot, _detect_objects_sep, get_catalog,
                    extract_airmass_and_zp, get_light_travel_times)
@@ -43,7 +46,6 @@ warnings.simplefilter('ignore', category=UserWarning)
 warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 
 GAIN = 1.131
-MAX_ALLOWED_PIXEL_SHIFT = 50
 N_OBJECTS_LIMIT = 200
 APERTURE_RADII = [4.9, 5, 6]
 RSI = 15
@@ -51,10 +53,7 @@ RSO = 20
 DEFOCUS = 0.0
 AREA_MIN = 10
 AREA_MAX = 200
-SCALE_MIN = 4.5
-SCALE_MAX = 5.5
 DETECTION_SIGMA = 3
-ZP_CLIP_SIGMA = 3
 
 OK, TOO_FEW_OBJECTS, UNKNOWN = range(3)
 
@@ -192,7 +191,7 @@ def main():
             phot_cat, _ = get_catalog(f"{directory}/{prefix}_catalog_input.fits", ext=1)
             logging.info(f"Found catalog with name {prefix}_catalog_input.fits")
             # Convert RA and DEC to pixel coordinates using the WCS information from the header
-            phot_x, phot_y = WCS(frame_hdr).all_world2pix(phot_cat['ra_deg_corr'], phot_cat['dec_deg_corr'], 1)
+            phot_x, phot_y = WCS(frame_hdr).all_world2pix(phot_cat['RA_CORR'], phot_cat['DEC_CORR'], 1)
 
             # Do time conversions - one time value per format per target
             half_exptime = frame_hdr['EXPTIME'] / 2.
@@ -201,8 +200,8 @@ def main():
             time_jd = Time(time_isot.jd, format='jd', scale='utc', location=get_location())
             # Correct to mid-exposure time
             time_jd = time_jd + half_exptime * u.second
-            ra = phot_cat['ra_deg_corr']
-            dec = phot_cat['dec_deg_corr']
+            ra = phot_cat['RA_CORR']
+            dec = phot_cat['DEC_CORR']
             ltt_bary, ltt_helio = get_light_travel_times(ra, dec, time_jd)
             time_bary = time_jd.tdb + ltt_bary
             time_helio = time_jd.utc + ltt_helio
@@ -210,12 +209,17 @@ def main():
             frame_ids = [filename for i in range(len(phot_x))]
             logging.info(f"Found {len(frame_ids)} sources")
 
-            frame_preamble = Table([frame_ids, phot_cat['gaia_id'], phot_cat['Tmag'], phot_cat['tic_id'],
-                                    phot_cat['gaiabp'], phot_cat['gaiarp'], time_jd.value, time_bary.value,
+            frame_preamble = Table([frame_ids, phot_cat['GAIA'], phot_cat['Tmag'], phot_cat['TIC'],
+                                    phot_cat['BPmag'], phot_cat['RPmag'], time_jd.value, time_bary.value,
                                     time_helio.value, phot_x, phot_y,
-                                    [airmass] * len(phot_x), [zp] * len(phot_x)],
+                                    np.array([airmass] * len(phot_x), dtype='float64'),
+                                    np.array([zp] * len(phot_x), dtype='float64')],
                                    names=("frame_id", "gaia_id", "Tmag", "tic_id", "gaiabp", "gaiarp", "jd_mid",
                                           "jd_bary", "jd_helio", "x", "y", "airmass", "zp"))
+
+            # Validate column type before stacking
+            frame_preamble['zp'] = frame_preamble['zp'].astype('float64', copy=False)
+            logging.info(f"zp column dtype in frame_preamble: {frame_preamble['zp'].dtype}")
 
             # Extract photometry at locations
             frame_phot = wcs_phot(frame_data, phot_x, phot_y, RSI, RSO, APERTURE_RADII, gain=GAIN)
