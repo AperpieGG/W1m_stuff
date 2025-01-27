@@ -26,29 +26,46 @@ def filter_filenames(directory):
 
 
 def trim_images(directory):
-
-    # Find and read the bias for hdr mode
+    """Check if FITS files are trimmed and trim them if necessary."""
     files = filter_filenames(directory)
 
-    # join the directory path to the filenames
+    if not files:
+        print(f"No valid FITS files found in {directory}")
+        return
+
     files_filtered = [os.path.join(directory, f) for f in files]
-    print(f'Found {len(files_filtered)} bias files in {directory}')
+    print(f"Found {len(files_filtered)} files in {directory}")
 
-    if fits.open(files_filtered[0])[0].data.shape == (2048, 2048):
-        print('The files are already trimmed')
-    else:
-        # check if we have an overscan to remove
-        for filename in files_filtered:
-            frame = fits.open(filename)
-            frame = frame[0]
-            print('Initial frame shape:', frame.data.shape)
-            if frame.data.shape == (2048, 2088):  # overscan present: x,y
-                frame_data = frame.data[:, 20:2068].astype(float)
-                print('Final frame shape:', frame_data.shape)
-                frame = fits.PrimaryHDU(frame_data.astype(np.uint16), header=frame.header)
-                frame.writeto(filename, overwrite=True)
+    already_trimmed = []
+    trimmed_files = []
 
-        print('Trimmed bias files to shape:', frame_data.shape)
+    for filename in files_filtered:
+        try:
+            with fits.open(filename) as frame:
+                frame_data = frame[0].data
+                print(f"Processing {filename} with shape {frame_data.shape}")
+
+                if frame_data.shape == (2048, 2048):
+                    # File is already trimmed
+                    already_trimmed.append(filename)
+                    print(f"{filename} is already trimmed.")
+                elif frame_data.shape == (2048, 2088):
+                    # Trim the overscan region
+                    trimmed_data = frame_data[:, 20:2068]
+                    fits.writeto(filename, trimmed_data.astype(np.uint16), header=frame[0].header, overwrite=True)
+                    trimmed_files.append(filename)
+                    print(f"{filename} has been trimmed to shape {trimmed_data.shape}.")
+                else:
+                    # Unexpected shape
+                    print(f"Unexpected shape for {filename}: {frame_data.shape}")
+        except Exception as e:
+            print(f"Error processing {filename}: {e}")
+
+    # Summary of results
+    print(f"Summary:")
+    print(f"  Already trimmed files: {len(already_trimmed)}")
+    print(f"  Trimmed files: {len(trimmed_files)}")
+    print(f"  Total processed: {len(files_filtered)}")
 
 
 def main():
