@@ -126,7 +126,7 @@ def limits_for_comps(table, tic_id_to_plot, APERTURE, dmb, dmf, crop_size, json_
     valid_color_mag_table = color_data[mag_mask]
 
     # Exclude stars with Tmag less than 9.4 and remove the target star from the table
-    valid_color_mag_table = valid_color_mag_table[valid_color_mag_table['Tmag'] > 9.4]
+    valid_color_mag_table = valid_color_mag_table[valid_color_mag_table['Tmag'] > 8.5]
     filtered_table = valid_color_mag_table[valid_color_mag_table['tic_id'] != tic_id_to_plot]
 
     # Then in your main code, make these changes:
@@ -285,11 +285,16 @@ def find_bad_comp_stars(comp_fluxes, airmass, comp_mags0, sig_level=2., dmag=0.5
     return comp_star_mask, comp_star_rms, i
 
 
-def find_best_comps(table, tic_id_to_plot, APERTURE, DM_BRIGHT, DM_FAINT, crop_size, json):
+def find_best_comps(table, tic_id_to_plot, APERTURE, DM_BRIGHT, DM_FAINT, crop_size, json, exclude_tic_ids=set()):
     # Filter the table based on color/magnitude tolerance
     filtered_table, airmass = limits_for_comps(table, tic_id_to_plot, APERTURE, DM_BRIGHT, DM_FAINT, crop_size, json)
+    # Remove bad comparison stars
+    if exclude_tic_ids:
+        filtered_table = filtered_table[~np.isin(filtered_table['tic_id'], list(exclude_tic_ids))]
+        print(f"Comparison stars after exclusion: {len(filtered_table)}")
+
     tic_ids = np.unique(filtered_table['tic_id'])
-    print(f'Number of comparison stars after the filter table in terms of color/mag: {len(tic_ids)}')
+    print(f'Number of comparison stars after filtering: {len(tic_ids)}')
 
     comp_fluxes = []
     comp_mags = []
@@ -435,7 +440,7 @@ def main():
     # Add parse for tic_id_to_plot
     parser = argparse.ArgumentParser(description='Plot light curves for a given TIC ID.')
     parser.add_argument('tic_id', type=int, help='TIC ID to plot the light curve for.')
-    parser.add_argument('--aper', type=int, default=5, help='Aperture number to use for photometry.')
+    parser.add_argument('--aper', type=float, default=5, help='Aperture number to use for photometry.')
     parser.add_argument('--cam', type=str, default='CMOS', help='Aperture number to use for photometry.')
     parser.add_argument('--pos', action='store_true', help='Plot comp stars positions on the image.')
     parser.add_argument('--dmb', type=float, default=0.5, help='Brighter comparison star threshold (default: 0.5 mag)')
@@ -443,7 +448,17 @@ def main():
     parser.add_argument('--crop', type=int, help='Crop size for comparison stars (optional)')
     parser.add_argument('--json_file', action='store_true', help='Use JSON file for region filtering (optional)')
     parser.add_argument('--comp_stars', type=str, help='Text file with known comparison stars.')
+    parser.add_argument('--exclude', type=str, help='Text file containing TIC IDs of bad comparison stars to exclude.')
     args = parser.parse_args()
+
+    # Read excluded TIC IDs if provided
+    exclude_tic_ids = set()
+    if args.exclude:
+        try:
+            exclude_tic_ids = set(np.loadtxt(args.exclude, dtype=int))
+            print(f"Excluding {len(exclude_tic_ids)} TIC IDs from comparison stars.")
+        except Exception as e:
+            print(f"Error reading exclusion file: {e}")
 
     # Set parameters based on camera type
     if args.cam == 'CMOS':
@@ -487,7 +502,7 @@ def main():
             else:
                 # Find the best comparison stars
                 best_comps_table, AIRMASS = find_best_comps(phot_table, tic_id_to_plot, APERTURE, DM_BRIGHT, DM_FAINT,
-                                                            crop_size, fwhm_pos)
+                                                            crop_size, fwhm_pos, exclude_tic_ids)
                 tic_ids = np.unique(best_comps_table['tic_id'])
                 print(f'Found {len(tic_ids)} comparison stars from the analysis')
 
