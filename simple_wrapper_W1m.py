@@ -61,7 +61,13 @@ if __name__ == "__main__":
     # Select the first image as the reference
     ref_image = all_fits[0]
     base_name = ref_image.split('.fits')[0]
-    prefix = fits.getheader(ref_image)['OBJECT']
+    with fits.open(ref_image) as ff:
+        object_keyword = ff[0].header.get('OBJECT', '')
+        if args.camera.lower() == 'cmos':
+            prefix = object_keyword[:11]  # First 11 characters
+        else:  # Assume CCD by default
+            prefix = object_keyword  # Use the entire keyword
+
     cat_file = f"{prefix}_catalog.fits"
 
     # Get coordinates from the reference image header
@@ -109,36 +115,41 @@ if __name__ == "__main__":
         else:
             print(f"Successfully solved the reference image {ref_image}.\n")
 
-    # Iterate and solve remaining FITS images
-    for fits_file in all_fits:
-        if fits_file == ref_image:
-            continue
+        # Iterate and solve remaining FITS images
+        for fits_file in all_fits:
+            if fits_file == ref_image:
+                continue
 
-        with fits.open(fits_file) as hdulist:
-            object_keyword = hdulist[0].header.get('OBJECT', '')
-            if object_keyword.startswith(prefix):
-                if "_cat" not in fits_file and fits_file != ref_image:
-                    if 'CTYPE1' in hdulist[0].header and 'CTYPE2' in hdulist[0].header and 'ZP_ORDER' in hdulist[
-                        0].header:
-                        print(f"Image {fits_file} is already solved. Skipping..\n")
-                        continue
+            with fits.open(fits_file) as hdulist:
+                object_keyword = hdulist[0].header.get('OBJECT', '')
+                if args.camera.lower() == 'cmos':
+                    current_prefix = object_keyword[:11]
+                else:
+                    current_prefix = object_keyword
 
-                    print(f"Solving image {fits_file} for prefix: {prefix}\n")
-                    cmd2_args = ["/Users/u5500483/Documents/GitHub/W1m_stuff/solve_ref_images_W1m.py",
-                                 cat_file, fits_file, "--scale_min", scale_min, "--scale_max", scale_max]
+                if current_prefix.startswith(prefix):
+                    if "_cat" not in fits_file and fits_file != ref_image:
+                        if 'CTYPE1' in hdulist[0].header and 'CTYPE2' in hdulist[0].header and 'ZP_ORDER' in hdulist[
+                            0].header:
+                            print(f"Image {fits_file} is already solved. Skipping..\n")
+                            continue
 
-                    if args.save_matched_cat:
-                        cmd2_args.append("--save_matched_cat")
-                    if args.defocus is not None:
-                        cmd2_args.append(f"--defocus {args.defocus:.2f}")
-                    if args.force3rd:
-                        cmd2_args.append("--force3rd")
+                        print(f"Solving image {fits_file} for prefix: {prefix}\n")
+                        cmd2_args = ["/Users/u5500483/Documents/GitHub/W1m_stuff/solve_ref_images_W1m.py",
+                                     cat_file, fits_file, "--scale_min", scale_min, "--scale_max", scale_max]
 
-                    cmd2 = " ".join(cmd2_args)
-                    result = os.system(cmd2)
+                        if args.save_matched_cat:
+                            cmd2_args.append("--save_matched_cat")
+                        if args.defocus is not None:
+                            cmd2_args.append(f"--defocus {args.defocus:.2f}")
+                        if args.force3rd:
+                            cmd2_args.append("--force3rd")
 
-                    if result != 0:
-                        print(f"Failed to solve the image {fits_file}. Skipping to the next image.\n")
-                        continue  # Skip this image and move to the next
-                    else:
-                        print(f"Successfully solved the image {fits_file}.\n")
+                        cmd2 = " ".join(cmd2_args)
+                        result = os.system(cmd2)
+
+                        if result != 0:
+                            print(f"Failed to solve the image {fits_file}. Skipping to the next image.\n")
+                            continue  # Skip this image and move to the next
+                        else:
+                            print(f"Successfully solved the image {fits_file}.\n")
