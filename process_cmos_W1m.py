@@ -47,7 +47,7 @@ warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 
 GAIN = 1.131
 N_OBJECTS_LIMIT = 200
-APERTURE_RADII = [2.5, 3, 5]
+APERTURE_RADII = [5, 6]
 RSI = 15
 RSO = 20
 DEFOCUS = 0.0
@@ -66,12 +66,12 @@ def load_config(filename):
 
 # Load paths from the configuration file
 config = load_config('directories.json')
-calibration_paths = config["calibration_paths"]
+# calibration_paths = config["calibration_paths"]
 base_paths = config["base_paths"]
 out_paths = config["out_paths"]
 
 # Select directory based on existence
-for calibration_path, base_path, out_path in zip(calibration_paths, base_paths, out_paths):
+for base_path, out_path in zip(base_paths, out_paths):
     if os.path.exists(base_path):
         break
 
