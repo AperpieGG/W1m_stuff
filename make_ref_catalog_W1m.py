@@ -237,7 +237,7 @@ def fetch_catalog_vizier(ra_center, dec_center, box_width, box_height,
     print("Fetching catalog from Vizier...")
     Vizier.ROW_LIMIT = -1
     vizier_query = Vizier(
-        columns=["TIC", "GAIA", "RAJ2000", "DEJ2000", "Tmag", "Gmag", "BPmag", "RPmag", "pmRA", "pmDE"],
+        columns=["TIC", "GAIA", "RAJ2000", "DEJ2000", "Tmag", "Gmag", "BPmag", "RPmag", "pmRA", "pmDE", "Teff"],
         column_filters={"Gmag": "<18"}  # Filter for Gaia magnitude < 16
     )
     vizier_query.ROW_LIMIT = -1  # Set the row limit after creating the Vizier instance
