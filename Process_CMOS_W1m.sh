@@ -8,9 +8,6 @@ echo "Starting processing..."
 # Create directories.json with the specified paths
 cat <<EOF > directories.json
 {
-  "calibration_paths": [
-    "/Users/u5500483/Downloads/DATA_MAC/CMOS/20231212/"
-  ],
   "base_paths": [
     "/Users/u5500483/Downloads/DATA_MAC/CMOS/"
   ],
