@@ -109,8 +109,8 @@ def main():
         plt.scatter(filtered_tmag_list, filtered_flux_list, c=filtered_color_list, cmap='coolwarm', vmin=0.5, vmax=1.5)
         plt.colorbar(label='Color Index')
         plt.yscale('log')
-        plt.xlabel('Flux')
-        plt.ylabel('Tmag')
+        plt.xlabel('Tmag')
+        plt.ylabel('Flux')
         plt.title('Flux vs Tmag')
         # revert the x-axis
         plt.gca().invert_xaxis()
