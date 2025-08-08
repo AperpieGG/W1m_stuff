@@ -19,7 +19,6 @@ from astropy.coordinates import SkyCoord
 from astropy import units as u
 from astropy.utils.exceptions import AstropyWarning
 
-
 # Set up logging
 logger = logging.getLogger()  # Get the root logger
 logger.setLevel(logging.INFO)  # Set the overall logging level
@@ -45,14 +44,14 @@ logger.addHandler(stream_handler)
 warnings.simplefilter('ignore', category=UserWarning)
 warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 
-GAIN = 1.131
+GAIN = 3.85
 N_OBJECTS_LIMIT = 200
-APERTURE_RADII = [5]
-RSI = 15
-RSO = 20
+APERTURE_RADII = [5, 10, 20, 30]
+RSI = 35
+RSO = 45
 DEFOCUS = 0.0
 AREA_MIN = 10
-AREA_MAX = 200
+AREA_MAX = 2000
 DETECTION_SIGMA = 3
 
 OK, TOO_FEW_OBJECTS, UNKNOWN = range(3)
@@ -62,18 +61,6 @@ def load_config(filename):
     with open(filename, 'r') as file:
         config = json.load(file)
     return config
-
-
-# Load paths from the configuration file
-config = load_config('directories.json')
-# calibration_paths = config["calibration_paths"]
-base_paths = config["base_paths"]
-out_paths = config["out_paths"]
-
-# Select directory based on existence
-for base_path, out_path in zip(base_paths, out_paths):
-    if os.path.exists(base_path):
-        break
 
 
 def filter_filenames(directory):
@@ -118,7 +105,7 @@ def get_prefix(filenames):
     for filename in filenames:
         with fits.open(filename) as hdulist:
             object_keyword = hdulist[0].header.get('OBJECT', '')
-            prefix = object_keyword[:11]  # Take first 11 letters
+            prefix = object_keyword
             if prefix:  # Check if prefix is not empty
                 prefixes.add(prefix)
     return prefixes
@@ -153,8 +140,9 @@ def main():
         for filename in prefix_filenames:
             logging.info(f"Processing filename {filename}......")
             # Calibrate image and get FITS file
-            logging.info(f"The average pixel value for {filename} is {fits.getdata(os.path.join(directory, filename)).mean()}")
-            reduced_data, reduced_header, _ = reduce_images(base_path, out_path, [filename])
+            logging.info(
+                f"The average pixel value for {filename} is {fits.getdata(os.path.join(directory, filename)).mean()}")
+            reduced_data, reduced_header, _ = reduce_images([filename])
             logging.info(f"The average pixel value for {filename} is {reduced_data[0].mean()}")
             # Convert reduced_data to a dictionary with filenames as keys
             reduced_data_dict = {filename: (data, header) for data, header in zip(reduced_data, reduced_header)}
@@ -176,9 +164,16 @@ def main():
 
             frame_bg = sep.Background(frame_data)
             frame_data_corr_no_bg = frame_data - frame_bg
-            estimate_coord = SkyCoord(ra=frame_hdr['TELRA'],
-                                      dec=frame_hdr['TELDEC'],
-                                      unit=(u.deg, u.deg))
+
+            # Safely assign RA/Dec using fallback
+            try:
+                ra = frame_hdr['TELRA']
+                dec = frame_hdr['TELDEC']
+            except KeyError:
+                ra = frame_hdr['MNTRAD']
+                dec = frame_hdr['MNTDECD']
+
+            estimate_coord = SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg))
             estimate_coord_radius = 3 * u.deg
 
             frame_objects = _detect_objects_sep(frame_data_corr_no_bg, frame_bg.globalrms,
