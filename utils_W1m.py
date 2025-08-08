@@ -310,6 +310,12 @@ def find_max_pixel_value(data, x, y, radius):
     ------
     None
     """
+    # Check if the region is within the image bounds
+    if (y - radius < 0 or y + radius > data.shape[0] or
+            x - radius < 0 or x + radius > data.shape[1]):
+        print(f"Skipping star at ({x}, {y}) with radius {radius}: outside image bounds.")
+        return 0  # or np.nan or any appropriate default value
+
     return round(data[int(y - radius):int(y + radius),
                  int(x - radius):int(x + radius)].ravel().max(), 2)
 
