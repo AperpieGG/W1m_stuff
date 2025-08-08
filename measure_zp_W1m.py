@@ -24,7 +24,7 @@ class NumpyEncoder(json.JSONEncoder):
             return super(NumpyEncoder, self).default(obj)
 
 
-def measure_zp(table, APERTURE, EXPOSURE):
+def measure_zp(table, APERTURE, EXPOSURE, GAIN):
     tic_ids = np.unique(table['TIC_ID'])
     print(f'Found {len(tic_ids)} unique TIC IDs')
     zp_list = []
@@ -37,12 +37,8 @@ def measure_zp(table, APERTURE, EXPOSURE):
         tic_data = table[table['TIC_ID'] == tic_id]
 
         tic_flux = np.mean(tic_data[f'flux_{APERTURE}'])
-        if APERTURE == 4:
-            # multiply flux by CCD gain that is 2
-            tic_flux *= 2
-        else:
-            # multiply flux by CMOS gain that is 1.131
-            tic_flux *= 1.131
+
+        tic_flux *= GAIN
         # First Tmag value for the current TIC ID
         tic_Tmag = tic_data['Tmag'][0]
         target_color_index = tic_data['gaiabp'][0] - tic_data['gaiarp'][0]
@@ -67,9 +63,11 @@ def main():
                     'Example usage if you have CCD: RN=12.6, DC=0.00515, Aper=4, Exp=10.0, Bin=1')
     parser.add_argument('--exp', type=float, default=10.0, help='Exposure time in seconds')
     parser.add_argument('--aper', type=str, default=6, help='Aperture size in meters')
+    parser.add_argument('--gain', type=float, default=0.75, help='Gain (e-/ADU)')
     args = parser.parse_args()
     EXPOSURE = args.exp
     APERTURE = args.aper  # Aperture size for the telescope
+    GAIN = args.gain  # Gain for the camera
 
     # Get the current night directory
     current_night_directory = os.getcwd()
@@ -85,7 +83,7 @@ def main():
         print(f"Photometry file: {phot_file}")
 
         # Measure zero point
-        zp_list, color_list, flux_list, tmag_list = measure_zp(phot_table, APERTURE, EXPOSURE)
+        zp_list, color_list, flux_list, tmag_list = measure_zp(phot_table, APERTURE, EXPOSURE, GAIN)
 
         # save the results to a json file
         with open(f'zp{APERTURE}.json', 'w') as json_file:
