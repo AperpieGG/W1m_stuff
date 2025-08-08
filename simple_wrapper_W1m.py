@@ -9,8 +9,8 @@ import argparse as ap
 from astropy.io import fits
 
 # Possible base paths
-path1 = "/Users/u5500483/Documents/GitHub/W1m_stuff/solve_ref_images_W1m.py"
-path2 = "/home/ops/Apergis/W1m_stuff/solve_ref_images_W1m.py"
+path1 = "/Users/u5500483/Documents/GitHub/W1m_stuff/"
+path2 = "/home/ops/Apergis/W1m_stuff/"
 
 # Pick the one that exists
 solve_script = path1 if os.path.exists(path1) else path2
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     # Create the catalog if it doesn't exist
     if not os.path.exists(cat_file):
         print(f'Did not find catalog file: {cat_file}')
-        cmd_args = [solve_script,
+        cmd_args = [solve_script + "make_ref_catalog_W1m.py",
                     ra, dec, box_size, box_size, epoch, cat_file]
         cmd = " ".join(cmd_args)
         os.system(cmd)
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     # Solve reference image with catalog file
     if os.path.exists(cat_file):
         print(f'Solving reference image: {ref_image}')
-        cmd2_args = [solve_script,
+        cmd2_args = [solve_script + "solve_ref_images_W1m.py",
                      cat_file, ref_image, "--scale_min", scale_min, "--scale_max", scale_max]
 
         if args.save_matched_cat:
@@ -153,7 +153,7 @@ if __name__ == "__main__":
                             continue
 
                         print(f"Solving image {fits_file} for prefix: {prefix}\n")
-                        cmd2_args = [solve_script,
+                        cmd2_args = [solve_script + "solve_ref_images_W1m.py",
                                      cat_file, fits_file, "--scale_min", scale_min, "--scale_max", scale_max]
 
                         if args.save_matched_cat:
