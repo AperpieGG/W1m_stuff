@@ -27,9 +27,9 @@ def arg_parse():
                    action='store_true',
                    default=False)
     p.add_argument('--camera',
-                   help='camera type (ccd or cmos)',
+                   help='camera type (ccd, cmos or IMX571)',
                    type=str,
-                   default='ccd')
+                   default='IMX571')
     return p.parse_args()
 
 
@@ -38,12 +38,16 @@ if __name__ == "__main__":
     args = arg_parse()
 
     # Set scale values based on camera type
+    print(f'Using camera type: {args.camera}')
     if args.camera.lower() == 'ccd':
         scale_min = "4.5"
         scale_max = "5.5"
-    else:
+    elif args.camera.lower() == 'cmos':
         scale_min = "3.5"
         scale_max = "4.5"
+    elif args.camera == 'IMX571':
+        scale_min = "0.2"
+        scale_max = "0.24"
 
     # Get a list of all FITS images, exclude whatever has catalog name in
     all_fits = sorted(g.glob("*.fits"))
@@ -68,6 +72,7 @@ if __name__ == "__main__":
         else:  # Assume CCD by default
             prefix = object_keyword  # Use the entire keyword
 
+    print(f"Using reference image: {ref_image} with prefix: {prefix}")
     cat_file = f"{prefix}_catalog.fits"
 
     # Get coordinates from the reference image header
@@ -77,12 +82,18 @@ if __name__ == "__main__":
             dec = str(ff[0].header['CMD_DEC'])
             epoch = str(ff[0].header['DATE-OBS'])
             box_size = "3"  # Adjustable
-    else:
+    elif args.camera.lower() == 'cmos':
         with fits.open(ref_image) as ff:
             ra = str(ff[0].header['TELRAD'])
             dec = str(ff[0].header['TELDECD'])
             epoch = str(ff[0].header['DATE-OBS'])
             box_size = "3"  # Adjustable
+    elif args.camera == 'IMX571':
+        with fits.open(ref_image) as ff:
+            ra = str(ff[0].header['MNTRAD'])
+            dec = str(ff[0].header['MNTDECD'])
+            epoch = str(ff[0].header['DATE-OBS'])
+            box_size = "1"
 
     # Create the catalog if it doesn't exist
     if not os.path.exists(cat_file):
