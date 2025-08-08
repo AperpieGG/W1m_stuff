@@ -5,18 +5,6 @@ start_time=$(date +%s)
 
 echo "Starting processing..."
 
-# Create directories.json with the specified paths
-cat <<EOF > directories.json
-{
-  "base_paths": [
-    "/Users/u5500483/Downloads/DATA_MAC/CMOS/"
-  ],
-  "out_paths": [
-    "/Users/u5500483/Downloads/DATA_MAC/CMOS/calibration_images/"
-  ]
-}
-EOF
-
 # Run the Python scripts
 python /Users/u5500483/Documents/GitHub/W1m_stuff/simple_wrapper_W1m.py --camera IMX571
 python /Users/u5500483/Documents/GitHub/W1m_stuff/check_cmos_W1m.py
