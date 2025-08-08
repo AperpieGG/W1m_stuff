@@ -818,7 +818,7 @@ def output_matched_cat(data, sources, catalog, outfile):
     catalog.write(outfile, format='fits', overwrite=True)
 
 
-def update_master_catalog(catalog, wcs_list, cat_file):
+def update_master_catalog(catalog, wcs_list, cat_file, ref_image):
     """
     Take the master catalog and determine which objects are
     on a list of images (given their wcs headers)
@@ -827,9 +827,12 @@ def update_master_catalog(catalog, wcs_list, cat_file):
     ----------
     catalog : astropy Table
         The input master catalog
-    wcs_list : list
+    wcs_list :
         List of WCS header info
-
+    cat_file : string
+        Name of the master catalog file to update
+    ref_image : string
+        Name of the reference image file
     Returns
     -------
     catalog : astropy Table
@@ -839,13 +842,32 @@ def update_master_catalog(catalog, wcs_list, cat_file):
     ------
     None
     """
+
     # keep a mask of images that have been on silicon
     on_chip = np.zeros(len(catalog['RA_CORR']))
 
-    # now loop over the wcs headers and check if each object is on chip in them
-    IMAGE_WIDTH = 6252  # columns (x)
-    IMAGE_HEIGHT = 4176  # rows (y)
-    EDGE_BUFFER = 50  # padding from the edge
+    # Default full unbinned image size
+    FULL_WIDTH = 6252
+    FULL_HEIGHT = 4176
+    EDGE_BUFFER = 80
+
+    # Open the reference image to read CAM-BIN
+    with fits.open(ref_image) as hdul:
+        header = hdul[0].header
+
+        if 'CAM-BIN' not in header:
+            raise ValueError("CAM-BIN keyword is missing in the header of the reference image.")
+
+        try:
+            cam_bin = int(header['CAM-BIN'])
+            bin_x = bin_y = cam_bin
+            print(f"Binning detected: {bin_x}x{bin_y}")
+        except ValueError:
+            raise ValueError(f"CAM-BIN value '{header['CAM-BIN']}' could not be parsed as an integer.")
+
+    # Adjust image dimensions based on binning
+    IMAGE_WIDTH = FULL_WIDTH // bin_x
+    IMAGE_HEIGHT = FULL_HEIGHT // bin_y
 
     for w in wcs_list:
         if w is not None:
@@ -873,10 +895,10 @@ def update_master_catalog(catalog, wcs_list, cat_file):
     catalog.write(cat_file, format='fits', overwrite=True)
 
     # return the catalog for use in producing imcore output
-    return catalog
+    return catalog, IMAGE_WIDTH, IMAGE_HEIGHT
 
 
-def write_input_catalog(catalog, wcs_list, input_cat_file):
+def write_input_catalog(catalog, wcs_list, input_cat_file, IMAGE_WIDTH, IMAGE_HEIGHT):
     """
     Here we apply the cuts to the master catalog and
     then output the final input catalog for photometry
@@ -890,8 +912,11 @@ def write_input_catalog(catalog, wcs_list, input_cat_file):
     ----------
     catalog : astropy Table
         Master catalog
+    wcs_list : list
     input_cat_file : string
         name of the output input catalog
+    IMAGE_WIDTH : int
+    IMAGE_HEIGHT : int
 
     Returns
     -------
@@ -907,8 +932,6 @@ def write_input_catalog(catalog, wcs_list, input_cat_file):
 
     on_chip = np.zeros(len(catalog['RA_CORR']))
 
-    IMAGE_WIDTH = 6252  # columns (x)
-    IMAGE_HEIGHT = 4176  # rows (y)
     EDGE_BUFFER = 50  # padding from the edge
 
     for w in wcs_list:
@@ -1157,7 +1180,8 @@ if __name__ == "__main__":
             print(f"{imcore_cat_name} already exists. Skipping generation and writing.")
         else:
             # update the master catalog with stars that are on chip
-            master_catalog = update_master_catalog(master_catalog, wcs_store, args.cat_file)
+            master_catalog, IMAGE_WIDTH, IMAGE_HEIGHT = update_master_catalog(master_catalog, wcs_store,
+                                                                              args.cat_file, args.ref_images[0])
 
             # Write out some region files from the catalog
             # 1. The entire master catalog
@@ -1165,7 +1189,7 @@ if __name__ == "__main__":
             generate_region_file(master_catalog, args.cat_file)
 
             # Apply cuts and output the file for photometry
-            input_catalog = write_input_catalog(master_catalog, wcs_store, imcore_cat_name)
+            input_catalog = write_input_catalog(master_catalog, wcs_store, imcore_cat_name, IMAGE_WIDTH, IMAGE_HEIGHT)
 
             # Generate the input region file
             generate_input_region_file(input_catalog, imcore_cat_name)
