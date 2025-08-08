@@ -209,9 +209,23 @@ def _wcs_from_table(objects, frame_shape, scale_low, scale_high, estimate_coord=
             wcs_path = os.path.join(tempdir, 'scratch.wcs')
             objects.write(xyls_path, format='fits')
 
+            solve_field_path = None
+            possible_paths = [
+                '/opt/homebrew/bin/solve-field',
+                '/usr/local/astrometry.net/bin/solve-field',
+                '/usr/bin/solve-field'
+            ]
+
+            for path in possible_paths:
+                if os.path.isfile(path):
+                    solve_field_path = path
+                    break
+
+            if solve_field_path is None:
+                raise FileNotFoundError("solve-field not found in known locations.")
+
             astrometry_args = [
-                '/opt/homebrew/bin/solve-field' if os.path.isfile(
-                    '/opt/homebrew/bin/solve-field') else '/usr/local/astrometry.net/bin/solve-field',
+                solve_field_path,
                 '--no-plots',
                 '--scale-units', 'arcsecperpix',
                 '--no-tweak', '--no-remove-lines',  # '--no-fits2fits',
@@ -556,7 +570,7 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
     gids = catalog['GAIA']
     tmag = catalog['Tmag']
     # make a cross-match mask
-    cm_mask = np.where(((~np.isnan(gids)) & (tmag <= 15) & (tmag >= 10)))[0]
+    cm_mask = np.where(((~np.isnan(gids)) & (tmag <= 16) & (tmag >= 10)))[0]
     # make a trimmed catalog for cross-matching
     catalog_cm = catalog[cm_mask]
     catalog_cm = catalog_cm[~np.isnan(catalog_cm['RA_CORR']) & ~np.isnan(catalog_cm['DEC_CORR'])]
@@ -576,7 +590,7 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
     output.header['BACK-RMS'] = frame_bg.globalrms
 
     area_min = 10
-    area_max = 200
+    area_max = 2000
     detection_sigma = 3
     zp_clip_sigma = 3
 
@@ -585,16 +599,24 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
                                   dec=frame.header['TELDECD'],
                                   unit=(u.deg, u.deg))
         estimate_coord_radius = 4 * u.deg
+
     except KeyError:
         try:
             estimate_coord = SkyCoord(ra=frame.header['CMD_RA'],
                                       dec=frame.header['CMD_DEC'],
                                       unit=(u.deg, u.deg))
-            # estimate_coord_radius = 0.35 * u.deg
             estimate_coord_radius = 4 * u.deg
+
         except KeyError:
-            print('No commanded RA position, skipping!')
-            return None, None, None, None
+            try:
+                estimate_coord = SkyCoord(ra=frame.header['MNTRAD'],
+                                          dec=frame.header['MNTDECD'],
+                                          unit=(u.deg, u.deg))
+                estimate_coord_radius = 4 * u.deg
+
+            except KeyError:
+                print('No RA/DEC found in header (TELRAD, CMD_RA, or MNTRAD), skipping!')
+                return None, None, None, None
 
     # determine if an image is defocused
     # if defocused we need a new kernel for sep
@@ -646,9 +668,6 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
             delta_y = np.abs(wcs_y - objects['Y'])
             delta_xy = np.sqrt(delta_x ** 2 + delta_y ** 2)
 
-            # how far away is the median cross match?
-            print("Median delta_xy: {}".format(np.median(delta_xy)))
-
             zp_mask = np.logical_or(matched_cat['BLENDED'], delta_xy > 10)
             zp_delta_mag = matched_cat['Tmag'] + 2.5 * np.log10(objects['FLUX'] / frame_exptime)
             zp_mean, _, zp_stddev = sigma_clipped_stats(zp_delta_mag, mask=zp_mask, sigma=zp_clip_sigma)
@@ -658,6 +677,9 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
                 np.logical_not(zp_mask),
                 zp_delta_mag > zp_mean - zp_clip_sigma * zp_stddev,
                 zp_delta_mag < zp_mean + zp_clip_sigma * zp_stddev])
+
+            # how far away is the median cross match?
+            print("Median delta_xy: {}".format(np.median(delta_xy[zp_filter])))
 
             before_match, _ = check_wcs_corners(wcs_header, objects[zp_filter],
                                                 matched_cat[zp_filter], frame_data.shape)
@@ -681,11 +703,11 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
             after_match, _ = check_wcs_corners(wcs_header, objects[zp_filter],
                                                matched_cat[zp_filter], frame_data.shape)
             match_improvement = np.max([before_match[x] - after_match[x] for x in after_match])
-            if (i > 100) or ((match_improvement < 0.001) and (np.median(delta_xy) < 0.5)):
+            if (i > 100) or ((match_improvement < 0.001) and (np.median(delta_xy[zp_filter]) < 0.5)):
                 break
 
-        if np.median(delta_xy) > 0.5:
-            print(f"Skipping frame {input_path}: median delta_xy={np.median(delta_xy):.3f}")
+        if np.median(delta_xy[zp_filter]) > 0.5:
+            print(f"Skipping frame {input_path}: median delta_xy={np.median(delta_xy[zp_filter]):.3f}")
             return None, None, None, None
 
         line2 = '{} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}'.format(np.sum(zp_filter),
@@ -821,12 +843,21 @@ def update_master_catalog(catalog, wcs_list, cat_file):
     on_chip = np.zeros(len(catalog['RA_CORR']))
 
     # now loop over the wcs headers and check if each object is on chip in them
+    IMAGE_WIDTH = 6252  # columns (x)
+    IMAGE_HEIGHT = 4176  # rows (y)
+    EDGE_BUFFER = 50  # padding from the edge
+
     for w in wcs_list:
         if w is not None:
-            # now check the wcs driven pixel positions
-            x, y = WCS(w).all_world2pix(catalog['RA_CORR'],
-                                        catalog['DEC_CORR'], 1)
-            mask = np.where(((x > 50) & (x < 1998) & (y > 50) & (y < 1998)))[0]
+            # Convert RA/DEC to pixel positions using WCS
+            x, y = WCS(w).all_world2pix(catalog['RA_CORR'], catalog['DEC_CORR'], 1)
+
+            # Mask stars that lie safely within the chip boundaries
+            mask = np.where(
+                (x > EDGE_BUFFER) & (x < IMAGE_WIDTH - EDGE_BUFFER) &
+                (y > EDGE_BUFFER) & (y < IMAGE_HEIGHT - EDGE_BUFFER)
+            )[0]
+
             on_chip[mask] += 1
 
     # finally update the catalog header with whether a star has been on chip or not
@@ -876,12 +907,21 @@ def write_input_catalog(catalog, wcs_list, input_cat_file):
 
     on_chip = np.zeros(len(catalog['RA_CORR']))
 
+    IMAGE_WIDTH = 6252  # columns (x)
+    IMAGE_HEIGHT = 4176  # rows (y)
+    EDGE_BUFFER = 50  # padding from the edge
+
     for w in wcs_list:
         if w is not None:
-            # now check the wcs driven pixel positions
-            x, y = WCS(w).all_world2pix(catalog['RA_CORR'],
-                                        catalog['DEC_CORR'], 1)
-            mask = np.where(((x > 50) & (x < 1998) & (y > 50) & (y < 1998)))[0]
+            # Convert RA/DEC to pixel positions using WCS
+            x, y = WCS(w).all_world2pix(catalog['RA_CORR'], catalog['DEC_CORR'], 1)
+
+            # Mask stars that lie safely within the chip boundaries
+            mask = np.where(
+                (x > EDGE_BUFFER) & (x < IMAGE_WIDTH - EDGE_BUFFER) &
+                (y > EDGE_BUFFER) & (y < IMAGE_HEIGHT - EDGE_BUFFER)
+            )[0]
+
             on_chip[mask] += 1
 
     col = Column(name='on_chip', data=on_chip, dtype=np.int16)
@@ -898,7 +938,7 @@ def write_input_catalog(catalog, wcs_list, input_cat_file):
     # Exclude stars with 'True' in the 'blended' column
     # blended_mask = np.array([not any(blend) for blend in catalog['blended']])
 
-    mask = np.where((catalog['Tmag'] < 14) & (catalog['on_chip'] == 1.0) & (~catalog['BLENDED']))[0]
+    mask = np.where((catalog['Tmag'] < 16) & (catalog['on_chip'] == 1.0) & (~catalog['BLENDED']))[0]
 
     # mask the catalog and the source indexes
     catalog_clipped = catalog[mask]
@@ -957,7 +997,7 @@ def generate_region_file(catalog, cat_file):
 
         if on_chip and (tmag <= 16):
             colour = 'green'
-            master.append("circle({},{},15\") # color={}\n".format(ra, dec, colour))
+            master.append("circle({},{},1\") # color={}\n".format(ra, dec, colour))
         else:
             colour = 'blue'
             master.append("point({},{}) # color={} point=x\n".format(ra, dec, colour))
@@ -1008,7 +1048,7 @@ def generate_input_region_file(input_catalog, inp):
 
         if on_chip and (tmag <= 16):
             colour = 'green'
-            input.append("circle({},{},15\") # color={}\n".format(ra, dec, colour))
+            input.append("circle({},{},1\") # color={}\n".format(ra, dec, colour))
         else:
             pass  # don't plot the non-on-chip stars
 
@@ -1067,11 +1107,15 @@ if __name__ == "__main__":
             x_comp = (wcs_pos_x - objects_matched['X']) * vector_scale
             y_comp = (wcs_pos_y - objects_matched['Y']) * vector_scale
 
+            with fits.open(input_file) as hdul:
+                image_data = hdul[0].data
+                ny, nx = image_data.shape
+
             fig_q, ax_q = plt.subplots(1, figsize=(10, 10))
             ax_q.set_title('WCS - Source Detect Positions (x{})'.format(vector_scale))
             ax_q.quiver(objects_matched['X'], objects_matched['Y'], x_comp, y_comp, units='xy')
-            ax_q.set_xlim(0, 2048)
-            ax_q.set_ylim(0, 2048)
+            ax_q.set_xlim(0, nx)
+            ax_q.set_ylim(0, ny)
             fig_q.tight_layout()
             fig_q.savefig('{}_quiver_plot.png'.format(base_name))
 
