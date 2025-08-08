@@ -46,8 +46,8 @@ if __name__ == "__main__":
         scale_min = "3.5"
         scale_max = "4.5"
     elif args.camera == 'IMX571':
-        scale_min = "0.2"
-        scale_max = "0.24"
+        scale_min = "0.1"
+        scale_max = "0.5"
 
     # Get a list of all FITS images, exclude whatever has catalog name in
     all_fits = sorted(g.glob("*.fits"))
