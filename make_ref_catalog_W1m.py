@@ -238,7 +238,7 @@ def fetch_catalog_vizier(ra_center, dec_center, box_width, box_height,
     Vizier.ROW_LIMIT = -1
     vizier_query = Vizier(
         columns=["TIC", "GAIA", "RAJ2000", "DEJ2000", "Tmag", "Gmag", "BPmag", "RPmag", "pmRA", "pmDE", "Teff"],
-        column_filters={"Gmag": "<18"}  # Filter for Gaia magnitude < 16
+        column_filters={"Gmag": "<16"}  # Filter for Gaia magnitude < 16
     )
     vizier_query.ROW_LIMIT = -1  # Set the row limit after creating the Vizier instance
     try:
@@ -288,7 +288,7 @@ def fetch_catalog_vizier(ra_center, dec_center, box_width, box_height,
     start = Time.now()
     n_stars = len(ra_corr)
     blended = np.zeros(n_stars, dtype=bool)
-    exclusion_radius = 6 * 4. / 3600.  # Radius in degrees for blending exclusion
+    exclusion_radius = 50 * 0.22 / 3600.  # Radius in degrees for blending exclusion
 
     for i in range(n_stars):
         if blended[i]:
