@@ -8,12 +8,10 @@ Usage:
 python check_headers.py
 """
 
-from datetime import datetime, timedelta
 from donuts import Donuts
 from astropy.io import fits
 import numpy as np
 import os
-import json
 import logging
 import warnings
 
@@ -54,22 +52,27 @@ def filter_filenames(directory):
 
 def get_prefix(filenames):
     """
-    Extract unique prefixes from a list of filenames.
+    Extract unique OBJECT header values (prefixes) from a list of FITS filenames.
 
     Parameters
     ----------
     filenames : list of str
-        List of filenames.
-
+        List of FITS filenames.
     Returns
     -------
     set of str
-        Set of unique prefixes extracted from the filenames.
+        Set of unique OBJECT-derived prefixes.
     """
     prefixes = set()
     for filename in filenames:
-        prefix = filename[:11]
-        prefixes.add(prefix)
+        try:
+            with fits.open(filename) as hdul:
+                object_keyword = hdul[0].header.get('OBJECT', '').strip()
+                prefix = object_keyword
+                prefixes.add(prefix)
+        except Exception as e:
+            print(f"Warning: Could not read OBJECT from {filename}: {e}")
+            continue
     return prefixes
 
 
