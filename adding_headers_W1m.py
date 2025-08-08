@@ -55,7 +55,7 @@ def update_header(directory):
         filename = os.path.join(directory, filename)
         with fits.open(filename, mode='update') as hdul:
             if 'FILTER' not in hdul[0].header:
-                hdul[0].header['FILTER'] = 'NGTS'
+                hdul[0].header['FILTER'] = 'NONE'
             else:
                 print(f"FILTER already present for {filename}")
             if 'AIRMASS' not in hdul[0].header:
@@ -75,10 +75,13 @@ def update_header(directory):
                     if 'TELRAD' in hdul[0].header and 'TELDECD' in hdul[0].header:
                         ra = hdul[0].header['TELRAD']
                         dec = hdul[0].header['TELDECD']
-                    else:
+                    elif 'CMD_RA' in hdul[0].header and 'CMD_DEC' in hdul[0].header:
                         # Fallback to 'CMD_RA' and 'CMD_DEC' if 'TELRAD' or 'TELDECD' is missing
                         ra = hdul[0].header['CMD_RA']
                         dec = hdul[0].header['CMD_DEC']
+                    else:
+                        ra = hdul[0].header['MNTRAD']
+                        dec = hdul[0].header['MNTDECD']
                 except KeyError as e:
                     print(f"Error: Missing expected header key {e}.")
                     ra, dec = None, None  # Or set default values, if appropriate
