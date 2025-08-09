@@ -17,7 +17,7 @@ def bias():
     numpy.ndarray
         Master bias.
     """
-    master_bias_path = os.path.join('.', 'master_bias.fits')
+    master_bias_path = os.path.join('..', 'master_bias.fits')
 
     if os.path.exists(master_bias_path):
         print('Found master bias')
@@ -38,7 +38,7 @@ def dark():
     numpy.ndarray
         Master dark.
     """
-    master_dark_path = os.path.join('.', 'master_dark.fits')
+    master_dark_path = os.path.join('..', 'master_dark.fits')
 
     if os.path.exists(master_dark_path):
         print('Found master dark')
@@ -68,12 +68,12 @@ def flat(master_bias, master_dark, dark_exposure=10):
     """
     # Find and read the flat files
     # Find appropriate files for creating the master flat
-    evening_files = [f for f in glob.glob(os.path.join('.', 'evening*.fits')) if
+    evening_files = [f for f in glob.glob(os.path.join('..', 'evening*.fits')) if
                      'HDR' in fits.getheader(f)['READMODE']]
 
     if not evening_files:
         # If evening files don't exist, use morning files
-        evening_files = [f for f in glob.glob(os.path.join('.', 'morning*.fits')) if
+        evening_files = [f for f in glob.glob(os.path.join('..', 'morning*.fits')) if
                          'HDR' in fits.getheader(f)['READMODE']]
 
     if not evening_files:
@@ -101,9 +101,9 @@ def flat(master_bias, master_dark, dark_exposure=10):
 
         # Write the master flat with the copied header
         hdu = fits.PrimaryHDU(master_flat, header=header)
-        hdu.writeto(os.path.join('.', 'master_flat.fits'), overwrite=True)
+        hdu.writeto(os.path.join('..', 'master_flat.fits'), overwrite=True)
 
-        hdul = fits.open(os.path.join('.', 'master_flat.fits'), mode='update')
+        hdul = fits.open(os.path.join('..', 'master_flat.fits'), mode='update')
         hdul[0].header['FILTER'] = 'NONE'
         hdul.close()
 
