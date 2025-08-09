@@ -16,7 +16,6 @@ from astropy.table import Table, hstack
 import matplotlib.pyplot as plt
 from scipy.stats import median_abs_deviation
 from astropy.time import Time
-from wotan import flatten
 
 # pylint: disable=invalid-name
 # pylint: disable=no-member
@@ -621,42 +620,6 @@ def calculate_trend_and_flux(time, flux, fluxerr, degree=2):
     # Adjust flux and fluxerr accordingly
     dt_flux = flux / trend
     dt_fluxerr = fluxerr / trend
-    return trend, dt_flux, dt_fluxerr
-
-
-def calculate_trend_and_flux_wotan(time, flux, fluxerr, method='biweight', window_length=0.5, **kwargs):
-    """
-    Calculate the trend of the flux values over time and adjust flux and fluxerr accordingly.
-
-    Parameters:
-    time : array-like
-        Array containing the time values.
-    flux : array-like
-        Array containing the flux values.
-    fluxerr : array-like
-        Array containing the flux error values.
-    method : str, optional
-        Method to use for detrending. Options include 'biweight', 'lowess', 'savgol', etc. (default is 'biweight').
-    window_length : float, optional
-        The window length for the detrending algorithm, typically in units of days (default is 0.5).
-    kwargs : dict, optional
-        Additional arguments for the `flatten` function from wotan.
-
-    Returns:
-    trend : array-like
-        Array containing the trend values.
-    dt_flux : array-like
-        Array containing the adjusted flux values (flux divided by trend).
-    dt_fluxerr : array-like
-        Array containing the adjusted flux error values (fluxerr divided by trend).
-    """
-    # Use wotan's flatten function to calculate the trend
-    trend, _ = flatten(time, flux, method=method, window_length=window_length, return_trend=True, **kwargs)
-
-    # Adjust flux and fluxerr by dividing by the trend
-    dt_flux = flux / trend
-    dt_fluxerr = fluxerr / trend
-
     return trend, dt_flux, dt_fluxerr
 
 
