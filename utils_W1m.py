@@ -631,7 +631,7 @@ def scintilation_noise(airmass_list, exposure):
     airmass = np.mean(airmass_list**3)  # airmass
     C_y = 1.3  # constant
     # C_y = 1.8
-    N = np.sqrt(10e-6 * (C_y ** 2) * (D ** (-4 / 3)) * (1 / exposure) * (airmass) * np.exp((-2. * h) / H))
+    N = np.sqrt(10e-6 * (C_y ** 2) * (D ** (-4 / 3)) * (1 / exposure) * airmass * np.exp((-2. * h) / H))
     # print('Scintilation noise: ', N)
     # print('Airmass: ', airmass)
     return N
