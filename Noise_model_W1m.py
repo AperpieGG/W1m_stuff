@@ -126,9 +126,9 @@ def main():
         if bin_size > 1:
             # Bin the data, request the flux from the table and do the analysis.
             # bin the data
-            time = tic_data['Time_BJD']
-            flux = tic_data['Relative_Flux']
-            flux_err = tic_data['Relative_Flux_err']
+            time = tic_data['Time_BJD'][:2000]
+            flux = tic_data['Relative_Flux'][:2000]
+            flux_err = tic_data['Relative_Flux_err'][:2000]
             time, flux, flux_err = bin_time_flux_error(time, flux, flux_err, bin_fact=bin_size)
             # Calculate the RMS
             RMS = np.std(flux)
@@ -164,7 +164,7 @@ def main():
 
     # Get noise sources
     synthetic_mag, photon_shot_noise, sky_noise, read_noise, dc_noise, N, RNS = (
-        noise_sources(sky_list, bin_size, airmass_array, zp_list, APERTURE,
+        noise_sources(sky_list, bin_size, airmass_array, zp, APERTURE,
                       READ_NOISE, DARK_CURRENT, EXPOSURE, GAIN))
 
     # Convert lists to JSON serializable lists
