@@ -625,13 +625,13 @@ def calculate_trend_and_flux(time, flux, fluxerr, degree=2):
 
 def scintilation_noise(airmass_list, exposure):
     # Following Osborne et al. 2015 for Paranal
-    D = 0.2  # telescope diameter
-    h = 2400  # height of Paranal
+    D = 0.508  # telescope diameter
+    h = 2349  # height of Paranal
     H = 8000  # height of atmospheric scale
-    airmass = np.mean(airmass_list)  # airmass
-    C_y = 1.52  # constant
+    airmass = np.mean(airmass_list**3)  # airmass
+    C_y = 1.3  # constant
     # C_y = 1.8
-    N = np.sqrt(10e-6 * (C_y ** 2) * (D ** (-4 / 3)) * (1 / exposure) * (airmass ** 3) * np.exp((-2. * h) / H))
+    N = np.sqrt(10e-6 * (C_y ** 2) * (D ** (-4 / 3)) * (1 / exposure) * (airmass) * np.exp((-2. * h) / H))
     # print('Scintilation noise: ', N)
     # print('Airmass: ', airmass)
     return N
