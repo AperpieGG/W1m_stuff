@@ -109,38 +109,26 @@ def check_headers(directory, filenames):
     logger.info(f"Done checking headers, number of files without CTYPE1 and/or CTYPE2: {len(os.listdir(no_wcs))}")
 
 
-def check_donuts(file_groups, filenames):
-    """
-    Check donuts for each group of images with the same prefix.
-
-    Parameters
-    ----------
-    file_groups : list of str
-        Prefixes for the groups of images.
-    filenames : list of lists of filenames for the groups of images.
-    """
-    for filename, file_group in zip(filenames, file_groups):
-        # Using the first filename as the reference image
-        reference_image = file_group[0]
+def check_donuts(directory, file_groups):
+    for file_group in file_groups:
+        reference_image = os.path.join(directory, file_group[0])
         logger.info(f"Reference image: {reference_image}")
 
-        # Assuming Donuts class and measure_shift function are defined elsewhere
         d = Donuts(reference_image)
 
         for filename in file_group[1:]:
-            shift = d.measure_shift(filename)
+            filepath = os.path.join(directory, filename)
+            shift = d.measure_shift(filepath)
             sx = round(shift.x.value, 2)
             sy = round(shift.y.value, 2)
             logger.info(f'{filename} shift X: {sx} Y: {sy}')
-            shifts = np.array([abs(sx), abs(sy)])
 
-            if np.sum(shifts > 50) > 0:
+            if np.any(np.array([abs(sx), abs(sy)]) > 50):
                 logger.warning(f'{filename} image shift too big X: {sx} Y: {sy}')
-                if not os.path.exists('failed_donuts'):
-                    os.mkdir('failed_donuts')
-                comm = f'mv {filename} failed_donuts/'
-                logger.info(comm)
-                os.system(comm)
+                failed_dir = os.path.join(directory, 'failed_donuts')
+                if not os.path.exists(failed_dir):
+                    os.mkdir(failed_dir)
+                os.rename(filepath, os.path.join(failed_dir, filename))
 
 
 def main():
@@ -163,7 +151,7 @@ def main():
     check_headers(directory, filenames)
 
     # Check donuts for each group
-    check_donuts(prefix_filenames, filenames)
+    check_donuts(directory, prefix_filenames)
 
     logger.info("Done.")
 
