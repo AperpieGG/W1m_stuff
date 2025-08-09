@@ -20,11 +20,11 @@ import logging
 from scipy.interpolate import InterpolatedUnivariateSpline as Spline
 
 from astropy.table import Table
-from utils_W1m import (plot_images, get_phot_files, read_phot_file,
-                       bin_time_flux_error, expand_and_rename_table)
+from utils import (plot_images, get_phot_files, read_phot_file,
+                   bin_time_flux_error, expand_and_rename_table)
 
 # Constants for filtering stars
-COLOR_TOLERANCE = 0.2
+COLOR_TOLERANCE = 0.1
 MAGNITUDE_TOLERANCE = 1
 
 
@@ -55,12 +55,6 @@ def target_info(table, tic_id_to_plot, APERTURE):
     target_star = table[table['tic_id'] == tic_id_to_plot]  # Extract the target star data
     # Extract the TESS magnitude of the target star
     target_tmag = target_star['Tmag'][0]
-
-    # Ensure the target star is brighter than 12 mags
-    if target_tmag >= 12:
-        raise ValueError(f"Target star with TIC ID {tic_id_to_plot} has Tmag = {target_tmag:.3f}, "
-                         f"which is not brighter than 12 mags. Skipping.")
-
     target_flux = target_star[f'flux_{APERTURE}']  # Extract the flux of the target star
     target_fluxerr = target_star[f'fluxerr_{APERTURE}']  # Extract the flux error of the target star
     target_time = target_star['jd_bary']  # Extract the time of the target star
@@ -90,7 +84,7 @@ def limits_for_comps(table, tic_id_to_plot, APERTURE, dmb, dmf, crop_size):
     valid_color_mag_table = color_data[mag_mask]
 
     # Exclude stars with Tmag less than 9.4 and remove the target star from the table
-    valid_color_mag_table = valid_color_mag_table[valid_color_mag_table['Tmag'] > 9.4]
+    valid_color_mag_table = valid_color_mag_table[valid_color_mag_table['Tmag'] > 9.7]
     filtered_table = valid_color_mag_table[valid_color_mag_table['tic_id'] != tic_id_to_plot]
 
     # # If the target star is 12 mags or fainter, limit the comparison stars to 1000
@@ -324,9 +318,9 @@ def main():
     parser.add_argument('--bin_size', type=int, default=1, help='Number of images to bin')
     parser.add_argument('--aper', type=int, default=5, help='Aperture radius for photometry')
     parser.add_argument('--exposure', type=float, default=10, help='Exposure time for the images')
-    parser.add_argument('--crop_size', type=int, default=None, help='Size of the crop region around the target star')
-    parser.add_argument('--dmb', type=float, default=0.5, help='Magnitude difference for comparison stars')
-    parser.add_argument('--dmf', type=float, default=1.5, help='Magnitude difference for comparison stars')
+    parser.add_argument('--crop_size', type=int, default=1500, help='Size of the crop region around the target star')
+    parser.add_argument('--dmb', type=float, default=0.2, help='Magnitude difference for comparison stars')
+    parser.add_argument('--dmf', type=float, default=3.5, help='Magnitude difference for comparison stars')
     args = parser.parse_args()
     bin_size = args.bin_size
     APERTURE = args.aper
@@ -365,7 +359,7 @@ def main():
         for tic_id in np.unique(phot_table['tic_id']):
             print(f'The TIC_IDS to that will run is for total stars: {len(np.unique(phot_table["tic_id"]))}')
             # Check if all the Tmag values for the tic_id are less than or equal to 14
-            if np.all(phot_table['Tmag'][phot_table['tic_id'] == tic_id] < 14):  # Adjusted threshold
+            if np.all(phot_table['Tmag'][phot_table['tic_id'] == tic_id] < 16):  # Adjusted threshold
                 logger.info("")
                 logger.info(f"Performing relative photometry for TIC ID = {tic_id} with Tmag = "
                             f"{phot_table['Tmag'][phot_table['tic_id'] == tic_id][0]:.3f}")
