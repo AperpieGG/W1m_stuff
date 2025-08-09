@@ -84,7 +84,7 @@ def limits_for_comps(table, tic_id_to_plot, APERTURE, dmb, dmf, crop_size):
     valid_color_mag_table = color_data[mag_mask]
 
     # Exclude stars with Tmag less than 9.4 and remove the target star from the table
-    valid_color_mag_table = valid_color_mag_table[valid_color_mag_table['Tmag'] > 9]
+    valid_color_mag_table = valid_color_mag_table[valid_color_mag_table['Tmag'] > 1]
     filtered_table = valid_color_mag_table[valid_color_mag_table['tic_id'] != tic_id_to_plot]
 
     # Get target star coordinates
@@ -315,7 +315,7 @@ def main():
     parser.add_argument('--aper', type=int, default=20, help='Aperture radius for photometry')
     parser.add_argument('--exposure', type=float, default=10, help='Exposure time for the images')
     parser.add_argument('--crop_size', type=int, help='Size of the crop region around the target star')
-    parser.add_argument('--dmb', type=float, default=0.5, help='Magnitude difference for comparison stars')
+    parser.add_argument('--dmb', type=float, default=0.2, help='Magnitude difference for comparison stars')
     parser.add_argument('--dmf', type=float, default=3.5, help='Magnitude difference for comparison stars')
     args = parser.parse_args()
     bin_size = args.bin_size

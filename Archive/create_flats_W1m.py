@@ -48,12 +48,14 @@ def dark():
         return None
 
 
-def flat(master_dark, dark_exposure=10):
+def flat(master_bias, master_dark, dark_exposure=10):
     """
     Create the master flat from the flat files.
 
     Parameters
     ----------
+    master_bias : numpy.ndarray
+        Master bias.
     master_dark : numpy.ndarray
         Master dark.
     dark_exposure : int
@@ -89,8 +91,7 @@ def flat(master_dark, dark_exposure=10):
         for i, f in enumerate(files):
             data, header = fits.getdata(f, header=True)
             # for IMX571 we will not use master-bias, only dark
-            # cube[:, :, i] = data - master_bias - master_dark * header['EXPTIME'] / dark_exposure
-            cube[:, :, i] = data - master_dark * header['EXPTIME'] / dark_exposure
+            cube[:, :, i] = data - master_bias - master_dark * header['EXPTIME'] / dark_exposure
             cube[:, :, i] = cube[:, :, i] / np.average(cube[:, :, i])
 
         master_flat = np.median(cube, axis=2)
