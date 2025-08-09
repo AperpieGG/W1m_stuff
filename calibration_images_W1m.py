@@ -70,6 +70,7 @@ def flat(master_bias, master_dark, dark_exposure=10):
         cube = np.zeros((*fits.getdata(files[0]).shape, len(files)))
         for i, f in enumerate(files):
             data, header = fits.getdata(f, header=True)
+            data = data.astype(np.float64)  # or np.float32 to save memory
             if master_bias is not None:
                 data -= master_bias
             if master_dark is not None:
