@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+import argparse
 import os
 from datetime import datetime, timedelta
 
@@ -44,11 +45,11 @@ logger.addHandler(stream_handler)
 warnings.simplefilter('ignore', category=UserWarning)
 warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 
-GAIN = 3.85
+GAIN = 0.255
 N_OBJECTS_LIMIT = 200
-APERTURE_RADII = [5, 10, 20, 30]
-RSI = 35
-RSO = 45
+APERTURE_RADII = [20, 20, 30, 40, 50]
+RSI = 60
+RSO = 65
 DEFOCUS = 0.0
 AREA_MIN = 10
 AREA_MAX = 2000
