@@ -238,7 +238,7 @@ def fetch_catalog_vizier(ra_center, dec_center, box_width, box_height,
     Vizier.ROW_LIMIT = -1
     vizier_query = Vizier(
         columns=["TIC", "GAIA", "RAJ2000", "DEJ2000", "Tmag", "Gmag", "BPmag", "RPmag", "pmRA", "pmDE", "Teff"],
-        column_filters={"Gmag": "<16"}  # Filter for Gaia magnitude < 16
+        column_filters={"Tmag": "<16"}  # Filter for Gaia magnitude < 16
     )
     vizier_query.ROW_LIMIT = -1  # Set the row limit after creating the Vizier instance
     try:
