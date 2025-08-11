@@ -87,7 +87,7 @@ def main():
 
         # save the results to a json file
         with open(f'zp{APERTURE}.json', 'w') as json_file:
-            json.dump(np.nanmean(zp_list), json_file, indent=4)
+            json.dump(np.nanmedian(zp_list), json_file, indent=4)
 
         print(f"Results saved to zp{APERTURE}.json")
 
@@ -101,7 +101,7 @@ def main():
         filtered_color_list = [entry['color'] for entry in valid_data]
         filtered_flux_list = [entry['flux'] for entry in valid_data]
         filtered_tmag_list = [entry['tmag'] for entry in valid_data]
-        print(f"Zero point average: {np.nanmean(filtered_zp_list)}")
+        print(f"Zero point average: {np.nanmedian(filtered_zp_list)}")
 
         # color-coded with color index
         plt.scatter(filtered_tmag_list, filtered_flux_list, c=filtered_color_list, cmap='coolwarm', vmin=0.5, vmax=1.5)
