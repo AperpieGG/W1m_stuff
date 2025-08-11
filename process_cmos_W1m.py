@@ -45,7 +45,7 @@ logger.addHandler(stream_handler)
 warnings.simplefilter('ignore', category=UserWarning)
 warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
 
-GAIN = 0.255
+GAIN = 0.75
 N_OBJECTS_LIMIT = 200
 APERTURE_RADII = [20, 20, 30, 40, 50]
 RSI = 60
