@@ -782,7 +782,7 @@ def output_matched_cat(data, sources, catalog, outfile):
     None
     """
     # do photometry in r=3 pixel radius aperture on detections
-    flux3, fluxerr3, _ = sep.sum_circle(data, sources['X'], sources['Y'], 3.0, subpix=0, gain=1.0)
+    flux3, fluxerr3, _ = sep.sum_circle(data, sources['X'], sources['Y'], 30, subpix=0, gain=1.0)
 
     # finally update the catalog header with whether a star has been on chip or not
     col_f3 = Column(name='flux3', data=flux3, dtype=np.float32)
