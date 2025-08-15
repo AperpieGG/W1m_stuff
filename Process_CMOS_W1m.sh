@@ -6,9 +6,9 @@ start_time=$(date +%s)
 echo "Starting processing..."
 
 # Run the Python scripts
-python /home/ops/Apergis/W1m_stuff/W1m_stuff/simple_wrapper_W1m.py --camera IMX571
-python /home/ops/Apergis/W1m_stuff/W1m_stuff/check_cmos_W1m.py
-python /home/ops/Apergis/W1m_stuff/W1m_stuff/adding_headers_W1m.py
+python /home/ops/Apergis/W1m_stuff/simple_wrapper_W1m.py --camera IMX571
+python /home/ops/Apergis/W1m_stuff/check_cmos_W1m.py
+python /home/ops/Apergis/W1m_stuff/adding_headers_W1m.py
 #python /Users/u5500483/Documents/GitHub/W1m_stuff/create_flats_W1m.py
 python /home/ops/Apergis/W1m_stuff/process_cmos_W1m.py --gain 0.75
 #python /home/ops/fwhm_stars/fwhm_batches.py --size 11 --cam cmos # make plot and save to fwhm_results.json
