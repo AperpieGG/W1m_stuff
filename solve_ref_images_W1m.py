@@ -590,7 +590,7 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
     output.header['BACK-RMS'] = frame_bg.globalrms
 
     area_min = 10
-    area_max = 2000
+    area_max = 3000
     detection_sigma = 3
     zp_clip_sigma = 3
 
