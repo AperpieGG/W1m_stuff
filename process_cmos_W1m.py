@@ -124,12 +124,25 @@ def main():
 
         prefix_filenames = [filename for filename in filenames if filename.startswith(prefix)]
         for filename in prefix_filenames:
-            logging.info(f"Processing filename {filename}...")
+            logging.info(f"Processing filename {filename}......")
+            # Calibrate image and get FITS file
+            logging.info(
+                f"The average pixel value for {filename} is {fits.getdata(os.path.join(directory, filename)).mean()}")
             reduced_data, reduced_header, _ = reduce_images([filename])
+            logging.info(f"The average pixel value for {filename} is {reduced_data[0].mean()}")
             reduced_data_dict = {filename: (data, header) for data, header in zip(reduced_data, reduced_header)}
             frame_data, frame_hdr = reduced_data_dict[filename]
+            logging.info(f"Extracting photometry for {filename}")
 
             airmass, zp = extract_airmass_and_zp(frame_hdr)
+
+            wcs_ignore_cards = ['SIMPLE', 'BITPIX', 'NAXIS', 'EXTEND', 'DATE', 'IMAGEW', 'IMAGEH']
+            wcs_header = {}
+            for line in [frame_hdr[i:i + 80] for i in range(0, len(frame_hdr), 80)]:
+                key = line[0:8].strip()
+                if '=' in line and key not in wcs_ignore_cards:
+                    card = fits.Card.fromstring(line)
+                    wcs_header[card.keyword] = card.value
 
             frame_bg = sep.Background(frame_data)
             frame_data_corr_no_bg = frame_data - frame_bg
@@ -142,14 +155,16 @@ def main():
                 dec = frame_hdr['MNTDECD']
 
             estimate_coord = SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg))
+            estimate_coord_radius = 3 * u.deg
 
             frame_objects = _detect_objects_sep(frame_data_corr_no_bg, frame_bg.globalrms,
                                                 AREA_MIN, AREA_MAX, DETECTION_SIGMA, DEFOCUS)
             if len(frame_objects) < N_OBJECTS_LIMIT:
-                logging.info(f"Fewer than {N_OBJECTS_LIMIT} objects found in {filename}, skipping.")
+                logging.info(f"Fewer than {N_OBJECTS_LIMIT} objects found in {filename}, skipping photometry!")
                 continue
 
             phot_cat, _ = get_catalog(f"{directory}/{prefix}_catalog_input.fits", ext=1)
+            logging.info(f"Found catalog with name {prefix}_catalog_input.fits")
             phot_x, phot_y = WCS(frame_hdr).all_world2pix(phot_cat['RA_CORR'], phot_cat['DEC_CORR'], 1)
 
             half_exptime = frame_hdr['EXPTIME'] / 2.
@@ -163,6 +178,7 @@ def main():
             time_bary = time_jd.tdb + ltt_bary
             time_helio = time_jd.utc + ltt_helio
 
+            logging.info(f"Found {len(frame_ids)} sources")
             frame_ids = [filename for _ in range(len(phot_x))]
             frame_preamble = Table([frame_ids, phot_cat['Tmag'], phot_cat['TIC'],
                                     phot_cat['BPmag'], phot_cat['RPmag'], time_jd.value, time_bary.value,
@@ -183,14 +199,14 @@ def main():
                 phot_table = frame_output
             else:
                 phot_table = vstack([phot_table, frame_output])
-
+        logging.info(f"Finished photometry for {filename}\n")
         if phot_table is not None:
             phot_table.write(phot_output_filename, overwrite=True)
-            logging.info(f"Saved photometry for prefix {prefix} to {phot_output_filename}")
+            logging.info(f"Saved photometry for prefix {prefix} to {phot_output_filename}\n")
         else:
-            logging.info(f"No photometry data for prefix {prefix}.")
+            logging.info(f"No photometry data for prefix {prefix}.\n")
 
-    logging.info("Done!")
+    logging.info("All processing completed.")
 
 
 if __name__ == "__main__":
