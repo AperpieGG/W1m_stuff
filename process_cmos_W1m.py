@@ -178,8 +178,9 @@ def main():
             time_bary = time_jd.tdb + ltt_bary
             time_helio = time_jd.utc + ltt_helio
 
-            logging.info(f"Found {len(frame_ids)} sources")
             frame_ids = [filename for _ in range(len(phot_x))]
+            logging.info(f"Found {len(frame_ids)} sources")
+
             frame_preamble = Table([frame_ids, phot_cat['Tmag'], phot_cat['TIC'],
                                     phot_cat['BPmag'], phot_cat['RPmag'], time_jd.value, time_bary.value,
                                     phot_x, phot_y,
