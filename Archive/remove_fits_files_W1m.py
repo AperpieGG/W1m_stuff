@@ -24,24 +24,12 @@ def get_fits_filenames(directory):
 
 
 def get_prefix(filenames):
-    """
-    Extract unique prefixes from a list of filenames.
-
-    Parameters
-    ----------
-    filenames : list of str
-        List of filenames.
-
-    Returns
-    -------
-    set of str
-        Set of unique prefixes extracted from the filenames.
-    """
     prefixes = set()
     for filename in filenames:
-        basename = os.path.basename(filename)
-        prefix = basename[:11]
-        prefixes.add(prefix)
+        with fits.open(filename) as hdulist:
+            object_keyword = hdulist[0].header.get('OBJECT', '')
+            if object_keyword:
+                prefixes.add(object_keyword)
     return prefixes
 
 
