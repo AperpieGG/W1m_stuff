@@ -50,7 +50,7 @@ def filter_fits_files(filenames):
     for filename in filenames:
         # Check if the filename contains any of the ignored words
         if any(word in filename.lower() for word in ['master', 'bias', 'flat', 'catalog',
-                                                     'phot', 'morning', 'evening']):
+                                                     'phot', 'morning', 'evening', 'bz2']):
             continue
         # Append the filename to the filtered list if it passed the filter
         filtered_filenames.append(filename)
