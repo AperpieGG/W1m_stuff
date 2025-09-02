@@ -117,7 +117,7 @@ def main(directory):
         print("No .fits files found in the specified directory.")
         return
 
-    delete_flat_fits_files(filenames)
+    # delete_flat_fits_files(filenames)
 
     filtered_filenames = filter_fits_files(filenames)
     if not filtered_filenames:
