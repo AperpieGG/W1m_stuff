@@ -24,13 +24,11 @@ from astropy.utils.exceptions import AstropyWarning
 # -------------------------------------------------
 def parse_args():
     parser = argparse.ArgumentParser(description="Process FITS files for photometry.")
-    parser.add_argument("--gain", type=float, default=0.75,
-                        help="Detector gain in e-/ADU (default: 0.75)")
     parser.add_argument("--rsi", type=float, default=60,
                         help="Inner sky annulus radius in pixels (default: 60)")
     parser.add_argument("--rso", type=float, default=65,
                         help="Outer sky annulus radius in pixels (default: 65)")
-    parser.add_argument("--apertures", type=float, nargs="+", default=[20, 20, 30, 40, 50],
+    parser.add_argument("--apertures", type=float, nargs="+", default=[10, 20, 30, 40, 50],
                         help="List of aperture radii in pixels (default: 20 20 30 40 50)")
     return parser.parse_args()
 
@@ -99,7 +97,6 @@ def main():
     args = parse_args()
 
     # Use the arguments instead of hardcoded values
-    GAIN = args.gain
     RSI = args.rsi
     RSO = args.rso
     APERTURE_RADII = args.apertures
@@ -113,6 +110,27 @@ def main():
     prefixes = get_prefix(filenames)
     logging.info(f"The prefixes are: {prefixes}")
 
+    if not filenames:
+        logging.error("No valid FITS files found. Exiting.")
+        return
+
+        # -------------------------------------------------
+        # Determine gain from first file header
+        # -------------------------------------------------
+    first_file = filenames[0]
+    with fits.open(first_file) as hdul:
+        readmode = hdul[0].header.get("READMODE", "").strip().upper()
+
+    if readmode == "HDR":
+        GAIN = 0.75
+    elif readmode == "LN16":
+        GAIN = 0.25
+    else:
+        logging.warning(f"READMODE='{readmode}' not recognized, defaulting gain=1.0")
+        GAIN = 1.0
+
+    logging.info(f"READMODE detected: {readmode}, using GAIN={GAIN}")
+    
     for prefix in prefixes:
         phot_output_filename = os.path.join(directory, f"phot_{prefix}.fits")
         if os.path.exists(phot_output_filename):
