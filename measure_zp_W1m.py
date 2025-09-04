@@ -113,7 +113,7 @@ def main():
         # revert the x-axis
         plt.gca().invert_xaxis()
         plt.xlim(9, 16)
-        plt.show()
+        plt.savefig(f'zp{APERTURE}.png')
 
         with open(f'zp{APERTURE}_list.json', 'w') as json_file:
             # Save the filtered lists to a JSON file
