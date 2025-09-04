@@ -4,7 +4,7 @@ import bz2
 from astropy.io import fits
 
 # Words to exclude from science data filenames
-EXCLUDE_WORDS = ["bias", "flat", "evening", "morning", "phot", "rel"]
+EXCLUDE_WORDS = ["bias", "flat", "evening", "morning", "phot", "rel", "catalog"]
 
 
 def is_science_image(filename):
