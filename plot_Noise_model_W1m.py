@@ -84,7 +84,7 @@ def plot_noise_model(data):
     ax.set_xlabel('TESS Magnitude')
     ax.set_ylabel('RMS per 10 seconds (ppt)')
     ax.set_yscale('log')
-    ax.set_xlim(9.5, 18.5)
+    ax.set_xlim(9.5, 16)
     ax.set_ylim(0.8, 1500)
     ax.invert_xaxis()
     ax.grid(True, which='major', linestyle='--', linewidth=0.5)
