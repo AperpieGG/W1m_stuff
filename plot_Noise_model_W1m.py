@@ -67,9 +67,21 @@ def plot_noise_model(data):
         raise ValueError("Mismatch in sizes: total_mags, total_RMS, and total_colors should be the same length.")
 
     # Scatter plot with remaining stars
-    scatter = ax.scatter(total_mags, total_RMS, c=total_colors, cmap='coolwarm', vmin=0.5, vmax=1.5)
-    cbar = plt.colorbar(scatter, ax=ax)
-    cbar.set_label(r'$\mathrm{G_{BP} - G_{RP}}$')
+    # exclude stars if colors are > 2 or < 0.5
+    filtered_mags = []
+    filtered_RMS = []
+    filtered_colors = []
+    for mag, rms, color in zip(total_mags, total_RMS, total_colors):
+        if 0.5 <= color <= 1:
+            filtered_mags.append(mag)
+            filtered_RMS.append(rms)
+            filtered_colors.append(color)
+
+    ax.plot(filtered_mags, filtered_RMS, '.', color='black')
+
+    # scatter = ax.scatter(total_mags, total_RMS, c=total_colors, cmap='coolwarm', vmin=0.5, vmax=1.5)
+    # cbar = plt.colorbar(scatter, ax=ax)
+    # cbar.set_label(r'$\mathrm{G_{BP} - G_{RP}}$')
 
     # Plot various noise sources
     ax.plot(synthetic_mag, RNS, color='black', label='total noise')
