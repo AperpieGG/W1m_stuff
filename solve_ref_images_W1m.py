@@ -148,6 +148,21 @@ def _detect_objects_sep(data, background_rms, area_min, area_max,
         print("Source detect using default kernel")
         raw_objects = sep.extract(data, detection_sigma * background_rms, minarea=area_min)
 
+    # Diagnostic info
+    print("Initial detections:", len(raw_objects))
+    if len(raw_objects) > 0:
+        npix_vals = raw_objects['npix']
+        print("npix: min, median, 90th, max =", npix_vals.min(), np.median(npix_vals),
+              np.percentile(npix_vals, 90), npix_vals.max())
+        # Show the largest few detections
+        order = np.argsort(npix_vals)[::-1]
+        for i in order[:10]:
+            print(f"  idx={i} npix={npix_vals[i]:d} x={raw_objects['x'][i]:.1f} y={raw_objects['y'][i]:.1f} "
+                  f"xmin={raw_objects['xmin'][i]} xmax={raw_objects['xmax'][i]} "
+                  f"ymin={raw_objects['ymin'][i]} ymax={raw_objects['ymax'][i]}")
+    else:
+        print("No raw objects detected at this threshold/parameters.")
+
     initial_objects = len(raw_objects)
 
     raw_objects = Table(raw_objects[np.logical_and.reduce([
@@ -590,7 +605,7 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
     output.header['BACK-RMS'] = frame_bg.globalrms
 
     area_min = 10
-    area_max = 3000
+    area_max = 3000  # subject to be changed
     detection_sigma = 3
     zp_clip_sigma = 3
 
