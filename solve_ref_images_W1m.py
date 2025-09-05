@@ -80,7 +80,7 @@ def arg_parse():
 
 
 def _detect_objects_sep(data, background_rms, area_min, area_max,
-                        detection_sigma, defocus_mm, trim_border=10):
+                        detection_sigma, defocus_mm, trim_border=50):
     """
     Find objects in an image array using SEP
 
@@ -147,21 +147,6 @@ def _detect_objects_sep(data, background_rms, area_min, area_max,
     else:
         print("Source detect using default kernel")
         raw_objects = sep.extract(data, detection_sigma * background_rms, minarea=area_min)
-
-    # Diagnostic info
-    print("Initial detections:", len(raw_objects))
-    if len(raw_objects) > 0:
-        npix_vals = raw_objects['npix']
-        print("npix: min, median, 90th, max =", npix_vals.min(), np.median(npix_vals),
-              np.percentile(npix_vals, 90), npix_vals.max())
-        # Show the largest few detections
-        order = np.argsort(npix_vals)[::-1]
-        for i in order[:10]:
-            print(f"  idx={i} npix={npix_vals[i]:d} x={raw_objects['x'][i]:.1f} y={raw_objects['y'][i]:.1f} "
-                  f"xmin={raw_objects['xmin'][i]} xmax={raw_objects['xmax'][i]} "
-                  f"ymin={raw_objects['ymin'][i]} ymax={raw_objects['ymax'][i]}")
-    else:
-        print("No raw objects detected at this threshold/parameters.")
 
     initial_objects = len(raw_objects)
 
