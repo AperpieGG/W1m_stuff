@@ -150,63 +150,22 @@ def _detect_objects_sep(data, background_rms, area_min, area_max,
 
     initial_objects = len(raw_objects)
 
-    # --- existing filtering (edge trim + area_max) already in place ---
-    filtered = Table(raw_objects[np.logical_and.reduce([
+    raw_objects = Table(raw_objects[np.logical_and.reduce([
         raw_objects['npix'] < area_max,
+        # Filter targets near the edge of the frame
         raw_objects['xmin'] > trim_border,
         raw_objects['xmax'] < data.shape[1] - trim_border,
         raw_objects['ymin'] > trim_border,
         raw_objects['ymax'] < data.shape[0] - trim_border
     ])])
 
-    # Diagnostic
-    print("After simple filtering:", len(filtered))
-    if len(filtered) == 0:
-        print(
-            "No objects after filtering — consider lowering detection_sigma or increasing area_max / reducing trim_border")
+    print(detection_sigma * background_rms, initial_objects, len(raw_objects))
 
-    # --- further robust filtering ---
-    # 1) Absolute npix cap
-    ABS_MAX = 3000
-    mask_small_enough = filtered['npix'] < ABS_MAX
-    filtered = filtered[mask_small_enough]
-    print(f"After absolute npix < {ABS_MAX}: {len(filtered)}")
-
-    # 2) Ellipticity / compactness filtering
-    if 'a' in filtered.colnames and 'b' in filtered.colnames:
-        ellipticity = 1.0 - (filtered['b'] / (filtered['a'] + 1e-9))
-        compact_mask = ellipticity < 0.6
-        filtered = filtered[compact_mask]
-        print("After ellipticity filter:", len(filtered))
-
-    # 3) Limit to brightest N sources
-    MAX_SOURCES_FOR_SOLVER = 300
-    if len(filtered) > MAX_SOURCES_FOR_SOLVER:
-        order = np.argsort(filtered['cflux'])[::-1]
-        keep_idx = order[:MAX_SOURCES_FOR_SOLVER]
-        filtered = filtered[keep_idx]
-        print(f"Trimmed to top {MAX_SOURCES_FOR_SOLVER} sources by flux")
-
-    # 4) Relax if too few
-    if len(filtered) < 30:
-        print("Too few sources after strict filtering: relaxing ABS_MAX and ellipticity.")
-        npix_vals = raw_objects['npix']
-        suggested = int(np.percentile(npix_vals, 95) * 2)
-        ABS_MAX = max(ABS_MAX, suggested)
-        filtered = Table(raw_objects[np.logical_and.reduce([
-            raw_objects['npix'] < ABS_MAX,
-            raw_objects['xmin'] > trim_border,
-            raw_objects['xmax'] < data.shape[1] - trim_border,
-            raw_objects['ymin'] > trim_border,
-            raw_objects['ymax'] < data.shape[0] - trim_border
-        ])])
-        print("After relaxing, objects:", len(filtered))
-
-    # Final conversion for astrometry.net
+    # Astrometry.net expects 1-index pixel positions
     objects = Table()
-    objects['X'] = filtered['x'] + 1
-    objects['Y'] = filtered['y'] + 1
-    objects['FLUX'] = filtered['cflux']
+    objects['X'] = raw_objects['x'] + 1
+    objects['Y'] = raw_objects['y'] + 1
+    objects['FLUX'] = raw_objects['cflux']
     objects.sort('FLUX')
     objects.reverse()
     return objects
@@ -653,7 +612,7 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
                 estimate_coord = SkyCoord(ra=frame.header['MNTRAD'],
                                           dec=frame.header['MNTDECD'],
                                           unit=(u.deg, u.deg))
-                estimate_coord_radius = 4 * u.deg
+                estimate_coord_radius = 10 * u.deg
 
             except KeyError:
                 print('No RA/DEC found in header (TELRAD, CMD_RA, or MNTRAD), skipping!')
