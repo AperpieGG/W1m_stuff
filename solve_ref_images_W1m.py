@@ -590,7 +590,7 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
     output.header['BACK-RMS'] = frame_bg.globalrms
 
     area_min = 10
-    area_max = 3000  # subject to be changed
+    area_max = 5000  # subject to be changed
     detection_sigma = 3
     zp_clip_sigma = 3
 
@@ -612,7 +612,7 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
                 estimate_coord = SkyCoord(ra=frame.header['MNTRAD'],
                                           dec=frame.header['MNTDECD'],
                                           unit=(u.deg, u.deg))
-                estimate_coord_radius = 10 * u.deg
+                estimate_coord_radius = 4 * u.deg
 
             except KeyError:
                 print('No RA/DEC found in header (TELRAD, CMD_RA, or MNTRAD), skipping!')
