@@ -376,7 +376,7 @@ def main():
                     # Print current parameters being tested
                     print('\n')
                     print(
-                        f"Running TIC {tic_id} with Tmag {tmag_value:.3f} "
+                        f"Running TIC {tic_id} (Star {idx}/{total_stars}) with Tmag {tmag_value:.3f} "
                         f"with parameters: dmb={dmb}, dmf={dmf}, crop={crop_size}, color_tol={color_tol}")
                     # Override global tolerance for this run (or pass as argument)
                     global COLOR_TOLERANCE
