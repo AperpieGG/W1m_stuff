@@ -12,13 +12,13 @@ python /home/ops/Apergis/W1m_stuff/adding_headers_W1m.py
 #python /Users/u5500483/Documents/GitHub/W1m_stuff/create_flats_W1m.py
 python /home/ops/Apergis/W1m_stuff/process_cmos_W1m.py
 #python /home/ops/fwhm_stars/fwhm_batches.py --size 11 --cam cmos # make plot and save to fwhm_results.json
-python /home/ops/Apergis/W1m_stuff/relative_phot_dev_W1m.py --aper 30
+python /home/ops/Apergis/W1m_stuff/relative_phot_dev_W1m.py
 #python /Users/u5500483/Documents/GitHub/W1m_stuff/measure_zp_W1m.py --aper 20 --exp 10 --gain 0.75
 #python /home/ops/fwhm_stars/best_fwhm.py --size 11 # save to fwhm_positions.json
 python /home/ops/Apergis/W1m_stuff/zip_fits_W1m.py
 python /home/ops/Apergis/W1m_stuff/Archive/remove_fits_files_W1m.py
 
-echo "Finishing processing!"
+echo "Finishing processing!"  
 
 # Record the end time
 end_time=$(date +%s)
