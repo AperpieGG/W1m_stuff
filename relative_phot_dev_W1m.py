@@ -18,7 +18,7 @@ import itertools
 import numpy as np
 import logging
 from scipy.interpolate import InterpolatedUnivariateSpline as Spline
-
+from astropy.io import fits
 from astropy.table import Table
 from utils_W1m import (plot_images, get_phot_files, read_phot_file,
                        bin_time_flux_error, expand_and_rename_table)
@@ -322,12 +322,8 @@ def relative_phot(table, tic_id_to_plot, bin_size, APERTURE, DM_BRIGHT, DM_FAINT
 def main():
     parser = argparse.ArgumentParser(description='Perform relative photometry for a given night')
     parser.add_argument('--bin_size', type=int, default=1, help='Number of images to bin')
-    parser.add_argument('--aper', type=int, default=30, help='Aperture radius for photometry')
-    parser.add_argument('--exposure', type=float, default=10, help='Exposure time for the images')
     args = parser.parse_args()
     bin_size = args.bin_size
-    APERTURE = args.aper
-    EXPOSURE = args.exposure
 
     # Parameter grids for optimization
     dmb_values = [0.5, 1.0, 2.0]
@@ -345,6 +341,24 @@ def main():
     for phot_file in phot_files:
         phot_table = read_phot_file(os.path.join(current_night_directory, phot_file))
         logger.info(f"Photometry file: {phot_file}")
+
+        # --- Extract header information from the first frame ---
+        first_frame = phot_table['frame_id'][0]  # pick first image name
+        try:
+            with fits.open(first_frame) as hdul:
+                hdr = hdul[0].header
+                cam_bin = hdr.get("CAM-BIN", "N/A")
+                readmode = hdr.get("READMODE", "N/A")
+                logger.info(f"First frame: {first_frame}, CAM-BIN={cam_bin}, READMODE={readmode}")
+        except Exception as e:
+            logger.warning(f"Could not read header from {first_frame}: {e}")
+            cam_bin, readmode = "N/A", "N/A"
+        if cam_bin == 2:
+            APERTURE = 20
+        elif cam_bin == 1:
+            APERTURE = 30
+
+        logger.info(f'The parameters are: APERTURE={APERTURE}')
 
         base_filename = phot_file.split('.')[0]
         fits_filename = f"rel_{base_filename}_{APERTURE}_{bin_size}.fits"
