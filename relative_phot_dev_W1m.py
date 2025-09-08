@@ -329,7 +329,7 @@ def main():
     dmb_values = [0.5, 1.0, 2.0]
     dmf_values = [0.5, 1.0, 2.0]
     crop_values = [1500, 2000, None]  # None = full frame
-    color_values = [0.2, 0.4, 0.6, 0.8]  # Used inside limits_for_comps if you adjust it
+    color_values = [0.2, 0.4, 0.6]  # Used inside limits_for_comps if you adjust it
 
     # Set plot parameters
     plot_images()
