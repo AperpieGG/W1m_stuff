@@ -652,7 +652,7 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
                               dec=catalog_cm['DEC_CORR'] * u.degree)
 
         # Iteratively improve the cross-match, WCS fit, and ZP estimation
-        cam_bin = int(frame.header("CAM-BIN", 1))  # default to 1 if missing
+        cam_bin = frame.header['CAM-BIN']
         if cam_bin == 2:
             delta_thresh = 1.0
         else:
