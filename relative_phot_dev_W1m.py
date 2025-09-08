@@ -183,13 +183,13 @@ def find_bad_comp_stars(comp_fluxes, airmass, comp_mags0, sig_level=2., dmag=0.5
         N2 = np.sum(comp_star_mask)
 
         # the number of stars included and excluded
-        logger.info(f"Iteration {i}: Stars included: {N2}, Stars excluded: {N1 - N2}")
-
-        logger.info(f'Final stars included: {N2}')
+        # logger.info(f"Iteration {i}: Stars included: {N2}, Stars excluded: {N1 - N2}")
 
         # Exit condition: no further changes or too many iterations
         if N1 == N2 or i > 10:
             break
+
+        logger.info(f'Final stars included: {N2}')
 
     return comp_star_mask, comp_star_rms, i
 
@@ -241,7 +241,7 @@ def find_best_comps(table, tic_id_to_plot, APERTURE, DM_BRIGHT, DM_FAINT, crop_s
     tic_ids = np.array(valid_tic_ids)  # Update tic_ids to contain only valid IDs
 
     # Log dimensions before calling find_bad_comp_stars
-    logger.info(f'The dimensions of these two are: {comp_mags.shape}, {comp_fluxes.shape}')
+    # logger.info(f'The dimensions of these two are: {comp_mags.shape}, {comp_fluxes.shape}')
 
     # Ensure we have valid comparison stars before calling the next function
     if len(comp_fluxes) == 0:
