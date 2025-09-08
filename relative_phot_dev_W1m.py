@@ -358,9 +358,13 @@ def main():
         total_stars = len(tic_ids)
 
         for idx, tic_id in enumerate(tic_ids, start=1):
-            if np.all(phot_table['Tmag'][phot_table['tic_id'] == tic_id] < 16):
+            mask = phot_table['tic_id'] == tic_id
+            tmag_value = phot_table['Tmag'][mask][0]  # Take the first Tmag for this star
+
+            if np.all(phot_table['Tmag'][mask] < 16):
                 # Print which star we are processing
-                print(f"\033[94m\nRunning TIC {tic_id} ({idx}/{total_stars})\033[0m")  # Blue text
+                print(
+                    f"\033[94m\nRunning TIC {tic_id} (Star {idx}/{total_stars}, Tmag={tmag_value:.3f})\033[0m")  # Blue text
 
                 best_rms = np.inf
                 best_result = None
@@ -372,8 +376,8 @@ def main():
                     # Print current parameters being tested
                     print('\n')
                     print(
-                        f"Running TIC {tic_id} with parameters: dmb={dmb}, dmf={dmf}, crop={crop_size}, color_tol={color_tol}")
-
+                        f"Running TIC {tic_id} with Tmag {tmag_value:.3f} "
+                        f"with parameters: dmb={dmb}, dmf={dmf}, crop={crop_size}, color_tol={color_tol}")
                     # Override global tolerance for this run (or pass as argument)
                     global COLOR_TOLERANCE
                     COLOR_TOLERANCE = color_tol
