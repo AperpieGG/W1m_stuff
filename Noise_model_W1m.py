@@ -87,19 +87,20 @@ def main():
     EXPOSURE = 10.0
     DARK_CURRENT = 0.001 * args.bin_pixel
     if args.mode == 'LN':
-        APERTURE = 20
-        GAIN = 0.255
+        APERTURE = 30
+        GAIN = 0.25
         READ_NOISE = 1.08 * args.bin_pixel
     elif args.mode == 'HWC':
-        APERTURE = 20
+        APERTURE = 30
         GAIN = 0.75
-        READ_NOISE = 2.77 * args.bin_pixel
+        READ_NOISE = 3.14 * args.bin_pixel
     elif args.mode == 'LN12':
         APERTURE = 20
         GAIN = 3.85
-        READ_NOISE = 2.55 * args.bin_pixel
+        READ_NOISE = 2.65 * args.bin_pixel
 
     # Get the current working directory
+    print(f'The parameters are: EXPOSURE={EXPOSURE}, APERTURE={APERTURE}, GAIN={GAIN}')
     current_dir = os.getcwd()
 
     # Construct full path to the FITS file
@@ -123,19 +124,18 @@ def main():
         airmass_list.extend(tic_data['Airmass'])
         zp_list.extend(tic_data['ZP'])
 
-        if bin_size > 1:
+        if bin_size >= 1:
             # Bin the data, request the flux from the table and do the analysis.
             # bin the data
-            time = tic_data['Time_BJD'][:2000]
-            flux = tic_data['Relative_Flux'][:2000]
-            flux_err = tic_data['Relative_Flux_err'][:2000]
+            time = tic_data['Time_BJD']
+            flux = tic_data['Relative_Flux']
+            flux_err = tic_data['Relative_Flux_err']
             time, flux, flux_err = bin_time_flux_error(time, flux, flux_err, bin_fact=bin_size)
             # Calculate the RMS
             RMS = np.std(flux)
             # Convert RMS to ppm
             RMS = RMS * 1000
             RMS_list.append(RMS)
-
         else:
             # Use the original data without binning
             RMS_list.append(tic_data['RMS'][0] * 1000)  # Convert RMS to ppm
@@ -159,9 +159,11 @@ def main():
 
     # the file has the form phot_prefix.fits, I want to extract only the prefix
     zp = extract_zero_point(f'zp{APERTURE}.json')
-    print('Calculated zp and header zp avg is: ', np.mean(zp), np.mean(zp_list))
-    print('The average sky brightness is: ', np.mean(sky_list))
+    zp_list = np.mean(zp_list + 2.5 * np.log10(GAIN))
+    # zp_list_AV = (zp_list + zp) / 2
+    print('Measured ZP, Catalog Zp: ', zp, np.median(zp_list))
 
+    print('The average sky brightness is: ', np.mean(sky_list))
     # Get noise sources
     synthetic_mag, photon_shot_noise, sky_noise, read_noise, dc_noise, N, RNS = (
         noise_sources(sky_list, bin_size, airmass_array, zp, APERTURE,
