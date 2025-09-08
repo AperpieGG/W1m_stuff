@@ -165,7 +165,7 @@ def find_bad_comp_stars(comp_fluxes, airmass, comp_mags0, sig_level=2., dmag=0.5
 
         # Handle case with too few points for spline fitting
         if len(mag_nodes) < 4 or len(std_medians) < 4:  # Less than 4 points
-            logger.info("Not enough data for spline fitting. Trying linear interpolation.")
+            # logger.info("Not enough data for spline fitting. Trying linear interpolation.")
             if len(mag_nodes) > 1:
                 mod = np.interp(comp_mags, mag_nodes, std_medians)  # Use linear interpolation
                 mod0 = np.interp(comp_mags0, mag_nodes, std_medians)
