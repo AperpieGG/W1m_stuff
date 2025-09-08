@@ -288,7 +288,7 @@ def fetch_catalog_vizier(ra_center, dec_center, box_width, box_height,
     start = Time.now()
     n_stars = len(ra_corr)
     blended = np.zeros(n_stars, dtype=bool)
-    exclusion_radius = 150 * 0.22 / 3600.  # Radius in degrees for blending exclusion
+    exclusion_radius = 200 * 0.22 / 3600.  # Radius in degrees for blending exclusion
 
     for i in range(n_stars):
         if blended[i]:
