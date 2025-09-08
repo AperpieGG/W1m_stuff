@@ -77,11 +77,11 @@ def plot_noise_model(data):
             filtered_RMS.append(rms)
             filtered_colors.append(color)
 
-    ax.plot(filtered_mags, filtered_RMS, '.', color='black')
+    # ax.plot(filtered_mags, filtered_RMS, '.', color='black')
 
-    # scatter = ax.scatter(total_mags, total_RMS, c=total_colors, cmap='coolwarm', vmin=0.5, vmax=1.5)
-    # cbar = plt.colorbar(scatter, ax=ax)
-    # cbar.set_label(r'$\mathrm{G_{BP} - G_{RP}}$')
+    scatter = ax.scatter(total_mags, total_RMS, c=total_colors, cmap='coolwarm', vmin=0.5, vmax=1.5)
+    cbar = plt.colorbar(scatter, ax=ax)
+    cbar.set_label(r'$\mathrm{G_{BP} - G_{RP}}$')
 
     # Plot various noise sources
     ax.plot(synthetic_mag, RNS, color='black', label='total noise')
