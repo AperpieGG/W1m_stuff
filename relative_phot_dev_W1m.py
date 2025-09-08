@@ -330,9 +330,9 @@ def main():
     EXPOSURE = args.exposure
 
     # Parameter grids for optimization
-    dmb_values = [0.5, 1.0, 1.5, 2.0]
-    dmf_values = [0.5, 1.0, 1.5, 2.0]
-    crop_values = [1000, 1500, 2000, None]  # None = full frame
+    dmb_values = [0.5, 1.0, 2.0]
+    dmf_values = [0.5, 1.0, 2.0]
+    crop_values = [1500, 2000, None]  # None = full frame
     color_values = [0.2, 0.4, 0.6, 0.8]  # Used inside limits_for_comps if you adjust it
 
     # Set plot parameters
