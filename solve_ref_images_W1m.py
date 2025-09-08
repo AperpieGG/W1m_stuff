@@ -652,6 +652,12 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
                               dec=catalog_cm['DEC_CORR'] * u.degree)
 
         # Iteratively improve the cross-match, WCS fit, and ZP estimation
+        cam_bin = int(frame.header("CAM-BIN", 1))  # default to 1 if missing
+        if cam_bin == 2:
+            delta_thresh = 1.0
+        else:
+            delta_thresh = 0.5
+
         i = 0
         while True:
             # Cross-match vs the catalog so we can exclude false detections and improve our distortion fit
@@ -659,7 +665,6 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
             match_idx, _, _ = object_coordinates.match_to_catalog_sky(cat_coords)
             matched_cat = catalog_cm[match_idx]
 
-            # add check here for matches, try to catch bad catalog
             print("Number of matches: {}".format(len(match_idx)))
 
             wcs_x, wcs_y = WCS(wcs_header).all_world2pix(matched_cat['RA_CORR'],
@@ -678,14 +683,12 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
                 zp_delta_mag > zp_mean - zp_clip_sigma * zp_stddev,
                 zp_delta_mag < zp_mean + zp_clip_sigma * zp_stddev])
 
-            # how far away is the median cross match?
             print("Median delta_xy: {}".format(np.median(delta_xy[zp_filter])))
 
             before_match, _ = check_wcs_corners(wcs_header, objects[zp_filter],
                                                 matched_cat[zp_filter], frame_data.shape)
 
             if i == 0:
-                # nfilter, before stats
                 line = '{} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}'.format(np.sum(zp_filter),
                                                                       *before_match.values())
                 print("Pre tweak stats: {}".format(line))
@@ -703,11 +706,12 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
             after_match, _ = check_wcs_corners(wcs_header, objects[zp_filter],
                                                matched_cat[zp_filter], frame_data.shape)
             match_improvement = np.max([before_match[x] - after_match[x] for x in after_match])
-            if (i > 100) or ((match_improvement < 0.001) and (np.median(delta_xy[zp_filter]) < 0.5)):
+            if (i > 100) or ((match_improvement < 0.001) and
+                             (np.median(delta_xy[zp_filter]) < delta_thresh)):
                 break
 
-        if np.median(delta_xy[zp_filter]) > 0.5:
-            print(f"Skipping frame {input_path}: median delta_xy={np.median(delta_xy[zp_filter]):.3f}")
+        if np.median(delta_xy[zp_filter]) > delta_thresh:
+            print(f"Skipping frame {input_path}: median delta_xy={np.median(delta_xy[zp_filter]):.3f} (bin {cam_bin})")
             return None, None, None, None
 
         line2 = '{} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}'.format(np.sum(zp_filter),
@@ -730,7 +734,7 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
         hdu_list = [output]
 
         # Refine ZP using a 2d polynomial fit
-        fit_filter = np.logical_not(np.logical_or(matched_cat['BLENDED'], delta_xy > 0.5))
+        fit_filter = np.logical_not(np.logical_or(matched_cat['BLENDED'], delta_xy > delta_thresh))
         zp_poly, _ = fit_zeropoint_polynomial(matched_cat[fit_filter], objects[fit_filter], frame_exptime)
 
         # save the matched_cat for comparing fluxes to magnitudes
@@ -932,7 +936,7 @@ def write_input_catalog(catalog, wcs_list, input_cat_file, IMAGE_WIDTH, IMAGE_HE
 
     on_chip = np.zeros(len(catalog['RA_CORR']))
 
-    EDGE_BUFFER = 50  # padding from the edge
+    EDGE_BUFFER = 80  # padding from the edge
 
     for w in wcs_list:
         if w is not None:
@@ -1020,7 +1024,7 @@ def generate_region_file(catalog, cat_file):
 
         if on_chip and (tmag <= 16):
             colour = 'green'
-            master.append("circle({},{},1\") # color={}\n".format(ra, dec, colour))
+            master.append("circle({},{},4\") # color={}\n".format(ra, dec, colour))
         else:
             colour = 'blue'
             master.append("point({},{}) # color={} point=x\n".format(ra, dec, colour))
@@ -1071,7 +1075,7 @@ def generate_input_region_file(input_catalog, inp):
 
         if on_chip and (tmag <= 16):
             colour = 'green'
-            input.append("circle({},{},1\") # color={}\n".format(ra, dec, colour))
+            input.append("circle({},{},4\") # color={}\n".format(ra, dec, colour))
         else:
             pass  # don't plot the non-on-chip stars
 
