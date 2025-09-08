@@ -653,76 +653,33 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
 
         # Iteratively improve the cross-match, WCS fit, and ZP estimation
         i = 0
-        MIN_MATCHES_FOR_FIT = 10   # tuneable: require at least this many good matches for fitting
         while True:
             # Cross-match vs the catalog so we can exclude false detections and improve our distortion fit
             object_coordinates = SkyCoord(ra=objects['RA'] * u.degree, dec=objects['DEC'] * u.degree)
-            match_idx, sep2d, _ = object_coordinates.match_to_catalog_sky(cat_coords)
+            match_idx, _, _ = object_coordinates.match_to_catalog_sky(cat_coords)
             matched_cat = catalog_cm[match_idx]
 
             # add check here for matches, try to catch bad catalog
-            print("Number of matches (raw): {}".format(len(match_idx)))
+            print("Number of matches: {}".format(len(match_idx)))
 
-            # compute world->pixel for catalog positions
             wcs_x, wcs_y = WCS(wcs_header).all_world2pix(matched_cat['RA_CORR'],
                                                          matched_cat['DEC_CORR'], 1)
             delta_x = np.abs(wcs_x - objects['X'])
             delta_y = np.abs(wcs_y - objects['Y'])
             delta_xy = np.sqrt(delta_x ** 2 + delta_y ** 2)
 
-            # create mask of objects we consider bad for ZP (blends or huge positional offset)
-            if 'BLENDED' in matched_cat.colnames:
-                blended_col = matched_cat['BLENDED']
-            else:
-                blended_col = np.zeros(len(matched_cat), dtype=bool)
+            zp_mask = np.logical_or(matched_cat['BLENDED'], delta_xy > 10)
+            zp_delta_mag = matched_cat['Tmag'] + 2.5 * np.log10(objects['FLUX'] / frame_exptime)
+            zp_mean, _, zp_stddev = sigma_clipped_stats(zp_delta_mag, mask=zp_mask, sigma=zp_clip_sigma)
 
-            zp_mask = np.logical_or(blended_col, delta_xy > 10)
+            # Discard blends and any objects with inconsistent brightness
+            zp_filter = np.logical_and.reduce([
+                np.logical_not(zp_mask),
+                zp_delta_mag > zp_mean - zp_clip_sigma * zp_stddev,
+                zp_delta_mag < zp_mean + zp_clip_sigma * zp_stddev])
 
-            # compute zp_delta_mag safely
-            with np.errstate(invalid='ignore', divide='ignore'):
-                zp_delta_mag = matched_cat['Tmag'] + 2.5 * np.log10(objects['FLUX'] / frame_exptime)
-
-            # Safely compute sigma clipped stats: ensure there are unmasked values
-            unmasked_idx = np.where(~zp_mask)[0]
-            if unmasked_idx.size >= MIN_MATCHES_FOR_FIT:
-                try:
-                    zp_mean, _, zp_stddev = sigma_clipped_stats(zp_delta_mag, mask=zp_mask, sigma=zp_clip_sigma)
-                except Exception as e:
-                    print("sigma_clipped_stats failed:", e)
-                    zp_mean, zp_stddev = np.nan, np.nan
-            else:
-                # Not enough unmasked matches to compute a robust zp
-                print(f"Not enough unmasked matches for ZP stats: {unmasked_idx.size} (<{MIN_MATCHES_FOR_FIT})")
-                zp_mean, zp_stddev = np.nan, np.nan
-
-            # Now create the zp_filter only if zp_mean and zp_stddev are finite
-            if np.isfinite(zp_mean) and np.isfinite(zp_stddev) and zp_stddev > 0:
-                zp_filter = np.logical_and.reduce([
-                    np.logical_not(zp_mask),
-                    zp_delta_mag > zp_mean - zp_clip_sigma * zp_stddev,
-                    zp_delta_mag < zp_mean + zp_clip_sigma * zp_stddev])
-            else:
-                # fallback: define zp_filter simply as unmasked points (or stricter) for the distortion fit
-                zp_filter = ~zp_mask
-
-            n_good = np.sum(zp_filter)
-            print("Number of matches used for fit (zp_filter):", n_good)
-
-            # If too few matched points remain, either relax criteria or break and accept solution without refinement
-            if n_good < MIN_MATCHES_FOR_FIT:
-                print(f"Too few matches ({n_good}) for refinement. Skipping distortion fit and ZP refinement for this frame.")
-                # We still keep the current wcs_header (the astrometry.net solution)
-                # Set zp_mean/zp_stddev to NaN if they weren't computed
-                zp_mean = zp_mean if np.isfinite(zp_mean) else np.nan
-                zp_stddev = zp_stddev if np.isfinite(zp_stddev) else np.nan
-                break
-
-            # how far away is the median cross match? Guard the median call
-            if np.any(zp_filter):
-                median_delta_xy = np.median(delta_xy[zp_filter])
-            else:
-                median_delta_xy = np.inf
-            print("Median delta_xy: {}".format(median_delta_xy))
+            # how far away is the median cross match?
+            print("Median delta_xy: {}".format(np.median(delta_xy[zp_filter])))
 
             before_match, _ = check_wcs_corners(wcs_header, objects[zp_filter],
                                                 matched_cat[zp_filter], frame_data.shape)
@@ -733,18 +690,12 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
                                                                       *before_match.values())
                 print("Pre tweak stats: {}".format(line))
 
-            # Only attempt distortion fit if we have enough good matches
-            try:
-                wcs_header = fit_hdu_distortion(wcs_header, objects[zp_filter], matched_cat[zp_filter],
-                                                force3rd)
-            except Exception as e:
-                print("fit_hdu_distortion failed:", e)
-                # Stop iterative refinement — accept current WCS
-                break
+            wcs_header = fit_hdu_distortion(wcs_header, objects[zp_filter], matched_cat[zp_filter],
+                                            force3rd)
 
             i += 1
 
-            # Update object RA/DEC after fit
+            # Check for convergence
             objects['RA'], objects['DEC'] = WCS(wcs_header).all_pix2world(objects['X'],
                                                                           objects['Y'], 1,
                                                                           ra_dec_order=True)
@@ -752,16 +703,11 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
             after_match, _ = check_wcs_corners(wcs_header, objects[zp_filter],
                                                matched_cat[zp_filter], frame_data.shape)
             match_improvement = np.max([before_match[x] - after_match[x] for x in after_match])
-            if (i > 100) or ((match_improvement < 0.001) and (median_delta_xy < 0.5)):
+            if (i > 100) or ((match_improvement < 0.001) and (np.median(delta_xy[zp_filter]) < 0.5)):
                 break
 
-        if np.any(zp_filter):
-            med_val = np.median(delta_xy[zp_filter])
-        else:
-            med_val = np.inf
-
-        if med_val > 0.5:
-            print(f"Skipping frame {input_path}: median delta_xy={med_val:.3f}")
+        if np.median(delta_xy[zp_filter]) > 0.5:
+            print(f"Skipping frame {input_path}: median delta_xy={np.median(delta_xy[zp_filter]):.3f}")
             return None, None, None, None
 
         line2 = '{} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}'.format(np.sum(zp_filter),
@@ -769,9 +715,9 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
         print("Post tweak stats: {}".format(line2))
 
         # Assume the last cycle of the fit did not change the cross-match, so the zero point stats remain the same
-        wcs_header['MAGZP_T'] = round(float(zp_mean) if np.isfinite(zp_mean) else np.nan, 3)
-        wcs_header['MAGZP_Ts'] = round(float(zp_stddev) if np.isfinite(zp_stddev) else np.nan, 3)
-        wcs_header['MAGZP_Tc'] = int(np.sum(zp_filter))
+        wcs_header['MAGZP_T'] = round(zp_mean, 3)
+        wcs_header['MAGZP_Ts'] = round(zp_stddev, 3)
+        wcs_header['MAGZP_Tc'] = np.sum(zp_filter)
 
         updated_wcs_header, xy_residuals = check_wcs_corners(wcs_header, objects[zp_filter],
                                                              matched_cat[zp_filter], frame_data.shape)
