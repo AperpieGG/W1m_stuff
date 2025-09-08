@@ -14,7 +14,7 @@
 import argparse
 import os
 from collections import Counter
-
+import itertools
 import numpy as np
 import logging
 from scipy.interpolate import InterpolatedUnivariateSpline as Spline
@@ -55,6 +55,12 @@ def target_info(table, tic_id_to_plot, APERTURE):
     target_star = table[table['tic_id'] == tic_id_to_plot]  # Extract the target star data
     # Extract the TESS magnitude of the target star
     target_tmag = target_star['Tmag'][0]
+
+    # # Ensure the target star is brighter than 12 mags
+    # if target_tmag >= 12:
+    #     raise ValueError(f"Target star with TIC ID {tic_id_to_plot} has Tmag = {target_tmag:.3f}, "
+    #                      f"which is not brighter than 12 mags. Skipping.")
+
     target_flux = target_star[f'flux_{APERTURE}']  # Extract the flux of the target star
     target_fluxerr = target_star[f'fluxerr_{APERTURE}']  # Extract the flux error of the target star
     target_time = target_star['jd_bary']  # Extract the time of the target star
@@ -84,8 +90,12 @@ def limits_for_comps(table, tic_id_to_plot, APERTURE, dmb, dmf, crop_size):
     valid_color_mag_table = color_data[mag_mask]
 
     # Exclude stars with Tmag less than 9.4 and remove the target star from the table
-    valid_color_mag_table = valid_color_mag_table[valid_color_mag_table['Tmag'] > 1]
+    valid_color_mag_table = valid_color_mag_table[valid_color_mag_table['Tmag'] > 9.7]
     filtered_table = valid_color_mag_table[valid_color_mag_table['tic_id'] != tic_id_to_plot]
+
+    # # If the target star is 12 mags or fainter, limit the comparison stars to 1000
+    # if target_tmag >= 12:
+    #     filtered_table = filtered_table[:1000]  # Limit to the first 1000 rows
 
     # Get target star coordinates
     x_target = table[table['tic_id'] == tic_id_to_plot]['x'][0]
@@ -314,88 +324,100 @@ def main():
     parser.add_argument('--bin_size', type=int, default=1, help='Number of images to bin')
     parser.add_argument('--aper', type=int, default=30, help='Aperture radius for photometry')
     parser.add_argument('--exposure', type=float, default=10, help='Exposure time for the images')
-    parser.add_argument('--crop_size', type=int, help='Size of the crop region around the target star')
-    parser.add_argument('--dmb', type=float, default=0.2, help='Magnitude difference for comparison stars')
-    parser.add_argument('--dmf', type=float, default=2.5, help='Magnitude difference for comparison stars')
     args = parser.parse_args()
     bin_size = args.bin_size
     APERTURE = args.aper
     EXPOSURE = args.exposure
-    crop_size = args.crop_size
-    DM_BRIGHT = args.dmb
-    DM_FAINT = args.dmf
+
+    # Parameter grids for optimization
+    dmb_values = [0.5, 1.0, 1.5, 2.0]
+    dmf_values = [0.5, 1.0, 1.5, 2.0]
+    crop_values = [1000, 1500, 2000, None]  # None = full frame
+    color_values = [0.2, 0.4, 0.6, 0.8]  # Used inside limits_for_comps if you adjust it
 
     # Set plot parameters
     plot_images()
 
-    # Get the current night directory
     current_night_directory = os.getcwd()
-
-    # Get photometry files with the pattern 'phot_*.fits'
     phot_files = get_phot_files(current_night_directory)
     logger.info(f"Photometry files: {phot_files}")
 
-    # Loop through photometry files
     for phot_file in phot_files:
         phot_table = read_phot_file(os.path.join(current_night_directory, phot_file))
-
         logger.info(f"Photometry file: {phot_file}")
 
-        # Check if the output file already exists
-        base_filename = phot_file.split('.')[0]  # Remove the file extension
+        base_filename = phot_file.split('.')[0]
         fits_filename = f"rel_{base_filename}_{APERTURE}_{bin_size}.fits"
         if os.path.exists(fits_filename):
             logger.info(f"Data for {phot_file} already saved to {fits_filename}. Skipping analysis.")
             continue
 
-        # Create an empty list to store data for all TIC IDs
         data_list = []
 
-        # Loop through all tic_ids in the photometry file
-        for tic_id in np.unique(phot_table['tic_id']):
-            print(f'The TIC_IDS to that will run is for total stars: {len(np.unique(phot_table["tic_id"]))}')
-            # Check if all the Tmag values for the tic_id are less than or equal to 14
-            if np.all(phot_table['Tmag'][phot_table['tic_id'] == tic_id] <= 16):  # Adjusted threshold
-                logger.info("")
-                logger.info(f"Performing relative photometry for TIC ID = {tic_id} with Tmag = "
-                            f"{phot_table['Tmag'][phot_table['tic_id'] == tic_id][0]:.3f}")
-                # Perform relative photometry
-                result = relative_phot(phot_table, tic_id, bin_size, APERTURE, DM_BRIGHT, DM_FAINT, crop_size)
+        tic_ids = np.unique(phot_table['tic_id'])
+        total_stars = len(tic_ids)
 
-                # Check if result is None
-                if result is None:
-                    logger.info(f"TIC ID {tic_id} skipped due to an error.")
+        for idx, tic_id in enumerate(tic_ids, start=1):
+            if np.all(phot_table['Tmag'][phot_table['tic_id'] == tic_id] < 16):
+                # Print which star we are processing
+                print(f"\033[94m\nRunning TIC {tic_id} ({idx}/{total_stars})\033[0m")  # Blue text
+
+                best_rms = np.inf
+                best_result = None
+                best_params = None
+
+                # Loop over all combinations of parameters
+                for dmb, dmf, crop_size, color_tol in itertools.product(dmb_values, dmf_values, crop_values,
+                                                                        color_values):
+                    # Print current parameters being tested
+                    print('\n')
+                    print(
+                        f"Running TIC {tic_id} with parameters: dmb={dmb}, dmf={dmf}, crop={crop_size}, color_tol={color_tol}")
+
+                    # Override global tolerance for this run (or pass as argument)
+                    global COLOR_TOLERANCE
+                    COLOR_TOLERANCE = color_tol
+
+                    result = relative_phot(phot_table, tic_id, bin_size, APERTURE, dmb, dmf, crop_size)
+                    if result is None:
+                        continue
+
+                    _, _, dt_flux_binned, _, _, _, _, _ = result
+                    rms = np.std(dt_flux_binned)
+
+                    # Check if this RMS is better than the current best
+                    if rms < best_rms:
+                        best_rms = rms
+                        best_result = result
+                        best_params = (dmb, dmf, crop_size, color_tol)
+                        # Print when a new best RMS is found
+                        print('\n')
+                        print(f"\033[92m--> New best RMS found for TIC {tic_id}: {best_rms:.6f} "
+                              f"with parameters dmb={dmb}, dmf={dmf}, crop={crop_size}, color_tol={color_tol}\033[0m")
+
+                if best_result is None:
+                    logger.info(f"TIC ID {tic_id} skipped: no valid parameter combination found.")
                     continue
 
-                # Unpack the result if it's not None
-                (target_tmag, time_binned, dt_flux_binned, dt_fluxerr_binned, sky_median, airmass, zp, color) = result
+                logger.info(f"Best RMS for TIC {tic_id}: {best_rms:.6f} with params dmb={best_params[0]}, "
+                            f"dmf={best_params[1]}, crop={best_params[2]}, color_tol={best_params[3]}")
 
-                # Calculate RMS
-                rms = np.std(dt_flux_binned)
-                logger.info(f"RMS for TIC ID {tic_id} = {rms:.4f}")
+                (target_tmag, time_binned, dt_flux_binned, dt_fluxerr_binned, sky_median,
+                 airmass, zp, color) = best_result
 
-                # Append data to the list with a check
                 data_list.append((tic_id, target_tmag, time_binned, dt_flux_binned, dt_fluxerr_binned,
-                                  sky_median, rms, airmass, zp, color))
+                                  sky_median, best_rms, airmass, zp, color))
 
-                # Check the length of each data row before table creation
-                for index, row in enumerate(data_list):
-                    if len(row) != 10:
-                        print(f"Row {index} has {len(row)} columns: {row}")
+        if len(data_list) == 0:
+            logger.warning(f"No valid TIC IDs found for {phot_file}.")
+            continue
 
-                # Create the table if all rows have correct length
-                try:
-                    data_table = Table(rows=data_list, names=('TIC_ID', 'Tmag', 'Time_BJD', 'Relative_Flux',
-                                                              'Relative_Flux_err', 'Sky', 'RMS', 'Airmass',
-                                                              'ZP', 'COLOR'))
-                except ValueError as e:
-                    print("Error creating Astropy table:", e)
-                    raise
+        data_table = Table(rows=data_list, names=('TIC_ID', 'Tmag', 'Time_BJD', 'Relative_Flux',
+                                                  'Relative_Flux_err', 'Sky', 'RMS', 'Airmass',
+                                                  'ZP', 'COLOR'))
 
         expanded_data_table = expand_and_rename_table(data_table)
-
         expanded_data_table.write(fits_filename, format='fits', overwrite=True)
-
         logger.info(f"Data for {phot_file} saved to {fits_filename}.")
 
 
