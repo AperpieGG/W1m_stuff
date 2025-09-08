@@ -671,8 +671,12 @@ def prepare_frame(input_path, output_path, catalog, defocus, force3rd, save_matc
             delta_xy = np.sqrt(delta_x ** 2 + delta_y ** 2)
 
             # create mask of objects we consider bad for ZP (blends or huge positional offset)
-            zp_mask = np.logical_or(matched_cat.get('BLENDED', np.zeros(len(matched_cat), dtype=bool)),
-                                    delta_xy > 10)
+            if 'BLENDED' in matched_cat.colnames:
+                blended_col = matched_cat['BLENDED']
+            else:
+                blended_col = np.zeros(len(matched_cat), dtype=bool)
+
+            zp_mask = np.logical_or(blended_col, delta_xy > 10)
 
             # compute zp_delta_mag safely
             with np.errstate(invalid='ignore', divide='ignore'):
