@@ -189,7 +189,7 @@ def find_bad_comp_stars(comp_fluxes, airmass, comp_mags0, sig_level=2., dmag=0.5
         if N1 == N2 or i > 10:
             break
 
-        logger.info(f'Final stars included: {N2}')
+        # logger.info(f'Final stars included: {N2}')
 
     return comp_star_mask, comp_star_rms, i
 
@@ -287,7 +287,7 @@ def relative_phot(table, tic_id_to_plot, bin_size, APERTURE, DM_BRIGHT, DM_FAINT
         # Count the shapes and find the most common shape
         shape_counter = Counter(flux_shapes)
         most_common_shape, most_common_count = shape_counter.most_common(1)[0]
-        logger.info(f"Most common shape: {most_common_shape} with count: {most_common_count}")
+        logger.info(f"Common shape: {most_common_shape} with Final number of stars: {most_common_count}")
 
         # Check if the target TIC ID has the same shape
         target_flux_shape = table[table['tic_id'] == tic_id_to_plot][f'flux_{APERTURE}'].shape
