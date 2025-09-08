@@ -125,6 +125,8 @@ def main():
         GAIN = 0.75
     elif readmode == "LN16":
         GAIN = 0.25
+    elif readmode == "LN12":
+        GAIN = 3.85084
     else:
         logging.warning(f"READMODE='{readmode}' not recognized, defaulting gain=1.0")
         GAIN = 1.0
