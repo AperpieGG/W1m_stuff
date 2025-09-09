@@ -89,11 +89,11 @@ def main():
     if args.mode == 'LN':
         APERTURE = 30
         GAIN = 0.25
-        READ_NOISE = 1.08 * args.bin_pixel
+        READ_NOISE = 1.28 * args.bin_pixel
     elif args.mode == 'HWC':
         APERTURE = 30
         GAIN = 0.75
-        READ_NOISE = 3.14 * args.bin_pixel
+        READ_NOISE = 3.16 * args.bin_pixel
     elif args.mode == 'LN12':
         APERTURE = 20
         GAIN = 3.85
@@ -127,9 +127,11 @@ def main():
         if bin_size >= 1:
             # Bin the data, request the flux from the table and do the analysis.
             # bin the data
-            time = tic_data['Time_BJD']
-            flux = tic_data['Relative_Flux']
-            flux_err = tic_data['Relative_Flux_err']
+            time = tic_data['Time_BJD'][200:-400]  # avoid edges
+            flux = tic_data['Relative_Flux'][200:-400]
+            flux_err = tic_data['Relative_Flux_err'][200:-400]
+            sky = tic_data['Sky'][200:-400]
+
             time, flux, flux_err = bin_time_flux_error(time, flux, flux_err, bin_fact=bin_size)
             # Calculate the RMS
             RMS = np.std(flux)
@@ -151,7 +153,7 @@ def main():
             print(f"'COLOR' column missing in FITS file. Defaulting all data to black.")
             color_list.append("black")  # Default to black for all if column is missing
 
-        sky_list.append(tic_data['Sky'][0])
+        sky_list.append(sky.mean())
         Tmags_list.append(tic_data['Tmag'][0])
 
     # Convert lists to numpy arrays for calculations
