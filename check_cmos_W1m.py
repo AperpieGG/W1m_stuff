@@ -7,6 +7,7 @@ and moves the files without CTYPE1 and/or CTYPE2 to a separate directory.
 Usage:
 python check_headers.py
 """
+import sys
 
 from donuts import Donuts
 from astropy.io import fits
@@ -135,6 +136,13 @@ def main():
     # set directory for working
     directory = os.getcwd()
     logger.info(f"Directory: {directory}")
+
+    log_file = 'check_cmos.log'
+
+    # Exit if log file already exists
+    if os.path.exists(log_file):
+        logger.info(f"Log file '{log_file}' already exists. Exiting script.")
+        sys.exit(0)
 
     # filter filenames only for .fits data files
     filenames = filter_filenames(directory)
