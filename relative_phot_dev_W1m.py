@@ -94,8 +94,8 @@ def limits_for_comps(table, tic_id_to_plot, APERTURE, dmb, dmf, crop_size):
     filtered_table = valid_color_mag_table[valid_color_mag_table['tic_id'] != tic_id_to_plot]
 
     # # If the target star is 12 mags or fainter, limit the comparison stars to 1000
-    # if target_tmag >= 12:
-    #     filtered_table = filtered_table[:1000]  # Limit to the first 1000 rows
+    if target_tmag >= 14:
+        filtered_table = filtered_table[:150]  # Limit to the first 1000 rows
 
     # Get target star coordinates
     x_target = table[table['tic_id'] == tic_id_to_plot]['x'][0]
