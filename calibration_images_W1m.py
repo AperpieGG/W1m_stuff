@@ -11,7 +11,6 @@ from utils_W1m import get_location, get_light_travel_times
 def bias():
     master_bias_path = os.path.join('.', 'master_bias.fits')
     if os.path.exists(master_bias_path):
-        print('Found master bias in the current directory')
         return fits.getdata(master_bias_path)
     else:
         files = [f for f in glob.glob(os.path.join('.', 'bias*.fits'))][:21]
@@ -57,7 +56,6 @@ def dark(master_bias):
 def flat(master_bias, master_dark, dark_exposure=10):
     master_flat_path = os.path.join('.', 'master_flat.fits')
     if os.path.exists(master_flat_path):
-        print('Found master dark in the current directory')
         return fits.getdata(master_flat_path)
     else:
         files = glob.glob(os.path.join('.', 'evening*.fits')) or glob.glob(os.path.join('.', 'morning*.fits'))
