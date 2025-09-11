@@ -18,13 +18,21 @@ import warnings
 
 warnings.simplefilter('ignore', category=UserWarning)
 
+log_file = 'check_cmos.log'
 # Set up logging
 logging.basicConfig(
-    filename='check_cmos.log',
+    filename=log_file,
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Check if analysis already done
+if os.path.exists(log_file):
+    with open(log_file, "r") as f:
+        if any("Done." in line for line in f):
+            print(f"{log_file} shows analysis already completed. Skipping script.")
+            sys.exit(0)
 
 
 def filter_filenames(directory):
@@ -136,13 +144,6 @@ def main():
     # set directory for working
     directory = os.getcwd()
     logger.info(f"Directory: {directory}")
-
-    log_file = 'check_cmos.log'
-
-    # Exit if log file already exists
-    if os.path.exists(log_file):
-        logger.info(f"Log file '{log_file}' already exists. Exiting script.")
-        sys.exit(0)
 
     # filter filenames only for .fits data files
     filenames = filter_filenames(directory)
