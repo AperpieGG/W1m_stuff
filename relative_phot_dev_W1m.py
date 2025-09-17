@@ -93,10 +93,6 @@ def limits_for_comps(table, tic_id_to_plot, APERTURE, dmb, dmf, crop_size):
     valid_color_mag_table = valid_color_mag_table[valid_color_mag_table['Tmag'] > 9.7]
     filtered_table = valid_color_mag_table[valid_color_mag_table['tic_id'] != tic_id_to_plot]
 
-    # # If the target star is 12 mags or fainter, limit the comparison stars to 1000
-    if target_tmag >= 14:
-        filtered_table = filtered_table[:150]  # Limit to the first 1000 rows
-
     # Get target star coordinates
     x_target = table[table['tic_id'] == tic_id_to_plot]['x'][0]
     y_target = table[table['tic_id'] == tic_id_to_plot]['y'][0]
@@ -326,9 +322,9 @@ def main():
     bin_size = args.bin_size
 
     # Parameter grids for optimization
-    dmb_values = [0.5, 1.0, 2.0]
-    dmf_values = [0.5, 1.0, 2.0]
-    crop_values = [1500, 2000, None]  # None = full frame
+    dmb_values = [0.5, 1.0, 1.5]
+    dmf_values = [0.5, 1.0, 1.5]
+    crop_values = [1500, None]  # None = full frame
     color_values = [0.2, 0.4, 0.6]  # Used inside limits_for_comps if you adjust it
 
     # Set plot parameters
