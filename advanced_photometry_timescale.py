@@ -302,19 +302,19 @@ if __name__ == "__main__":
         target_rms = 400
     elif 9.5 < tmag < 10:
         dmb_range = [0.0]
-        target_rms = 400
+        target_rms = 300
     elif 10 < tmag < 11:
         target_rms = 400
     elif 11 <= tmag < 12:
-        target_rms = 600
+        target_rms = 400
     elif 12 <= tmag < 13:
-        target_rms = 1000
+        target_rms = 600
     elif 13 <= tmag < 14:
-        target_rms = 2000
+        target_rms = 800
     elif 14 <= tmag < 15:
-        target_rms = 3000
+        target_rms = 1000
     elif 15 <= tmag < 16:
-        target_rms = 4000
+        target_rms = 2000
 
     best_rms = np.inf
     best_params = None
@@ -330,7 +330,7 @@ if __name__ == "__main__":
             print(f"Params => dmb: {dmb}, dmf: {dmf}, crop: {crop}, color_lim: {color_lim}")
             found_optimal = True
             with open("best_params_log.txt", "a") as f:
-                cmd = f"/home/ops/ngcmos/rel_dev_dev.py {tic_id} --dmb {dmb} --dmf {dmf}"
+                cmd = f"/home/ops/Apergis/W1m_stuff/rel_dev_dev.py {tic_id} --dmb {dmb} --dmf {dmf}"
                 if crop is not None:
                     cmd += f" --crop {crop}"
                 cmd += f" --color {color_lim} --cam {args.cam}  # Found RMS: {rms:.2e} and RMS Unbinned: {rms_unbinned:.2f}\n"
