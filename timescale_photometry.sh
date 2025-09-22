@@ -75,6 +75,6 @@ mv target_light_curve*.json "$TARGET_DIR/"
 echo "Moved all target_light_curve JSON files to ./$TARGET_DIR/"
 
 # Run the plot_timescale_json.py script
-python3 /home/ops/ngcmos/plot_timescale_json.py
+python3 /home/ops/Apergis/W1m_stuff/plot_timescale_json.py
 
 echo "✅ Finished running plot_timescale_json.py"
