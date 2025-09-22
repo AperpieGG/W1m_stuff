@@ -348,7 +348,7 @@ if __name__ == "__main__":
             best_params = (dmb, dmf, crop, color_lim)
 
     if not found_optimal and best_params is not None:
-        print(f"\n🔍 Best RMS found (not within target tolerance): {best_rms}")
+        print(f"\n🔍 Best RMS found (not within target tolerance): {best_rms} and unbinned RMS: {rms_unbinned:.2f}")
         print(f"Best parameters: dmb={best_params[0]}, dmf={best_params[1]}, crop={best_params[2]}, "
               f"color_lim={best_params[3]}")
 
