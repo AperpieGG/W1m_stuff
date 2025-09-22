@@ -188,18 +188,24 @@ def run_photometry(tic_id, dmb, dmf, crop, color_lim, cam):
     try:
         # (All your main() logic moved here with 'args.dmb' -> dmb etc.)
         # Skip CLI parser and set values directly
-        if cam == 'CMOS':
-            APERTURE = 5
-            DC = 1.6
-            GAIN = 1.13
+        if cam == 'IMX571-HWC':
+            APERTURE = 30
+            DC = 0.001
+            GAIN = 0.75
             EXPOSURE = 10.0
-            RN = 1.56
-        else:
-            APERTURE = 4
-            GAIN = 2
-            DC = 0.00515
+            RN = 3.16
+        elif cam == 'IMX571-LN':
+            APERTURE = 30
+            GAIN = 0.25
+            DC = 0.001
             EXPOSURE = 10.0
-            RN = 12.9
+            RN = 1.28
+        elif cam == 'IMX571-LN12':
+            APERTURE = 20
+            GAIN = 3.85
+            DC = 0.001
+            EXPOSURE = 10.0
+            RN = 2.85
 
         directory = '.'
         phot_file = get_phot_files(directory)[0]
