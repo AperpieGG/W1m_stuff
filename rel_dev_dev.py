@@ -481,7 +481,7 @@ def main():
         GAIN = 0.75
         DC = 0.001
         EXPOSURE = 10.0
-        RN = 3.14
+        RN = 3.16
     elif args.cam == 'IMX571-2':
         APERTURE = 20
         GAIN = 3.85
