@@ -96,8 +96,7 @@ if __name__ == "__main__":
     parser.add_argument('--bin', type=int, default=180, help='Max binning size')
     parser.add_argument('--exp', type=int, default=10, help='Exposure time in seconds')
     args = parser.parse_args()
-    home_dir = '.'
-    directory = f"{home_dir}/targets"
+    directory = '.'
     phot_table = load_all_jsons_as_table(directory)
 
     times, avg_rms, RMS_model = compute_rms_values(phot_table, args=args)
