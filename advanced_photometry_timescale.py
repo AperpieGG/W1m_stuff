@@ -291,9 +291,9 @@ if __name__ == "__main__":
     print(f'The Tmag for TIC ID {tic_id} is {tmag}')
     del phot_data
 
-    dmb_range = [0.5, 1]
-    dmf_range = np.arange(0.5, 2, 0.5).round(2).tolist()
-    crop_range = [None, 1200, 1400, 2000, 3000]
+    dmb_range = [0.5, 1, 1.5]
+    dmf_range = [0.5, 1, 1.5, 2, 2.5]
+    crop_range = [None, 1500, 2000, 3000]
     color_lim_range = np.arange(0.1, 0.6, 0.1).round(2).tolist()
     tolerance = 200
 
