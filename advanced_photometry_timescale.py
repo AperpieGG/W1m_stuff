@@ -301,18 +301,18 @@ if __name__ == "__main__":
     dmf_range = [0.5, 1.5, 2, 2.5]
     crop_range = [None, 1500, 3000]
     color_lim_range = [0.2, 0.4, 0.6]
-    tolerance = 200
+    tolerance = 100
 
     if 7.5 < tmag < 9.5:
         dmb_range = [0.0]
-        target_rms = 400
+        target_rms = 200
     elif 9.5 < tmag < 10:
         dmb_range = [0.0]
         target_rms = 300
     elif 10 < tmag < 11:
         target_rms = 400
     elif 11 <= tmag < 12:
-        target_rms = 400
+        target_rms = 500
     elif 12 <= tmag < 13:
         target_rms = 600
     elif 13 <= tmag < 14:
