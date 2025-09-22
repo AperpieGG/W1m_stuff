@@ -272,8 +272,8 @@ def run_photometry(tic_id, dmb, dmf, crop, color_lim, cam):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Optimize photometric parameters.")
     parser.add_argument('--tic_id', type=int, required=True, help="Target TIC ID")
-    parser.add_argument('--cam', type=str, default='CMOS', choices=['CMOS', 'CCD'],
-                        help="Camera type (CMOS or CCD)")
+    parser.add_argument('--cam', type=str, default='IMX571-HWC',
+                        help="Camera type (IMX571-HWC, IMX571-LN, IMX571-LN12)")
     args = parser.parse_args()
 
     tic_id = args.tic_id  # The TIC ID you're interested in
