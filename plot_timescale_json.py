@@ -12,11 +12,11 @@ from utils_W1m import bin_time_flux_error, plot_images
 plot_images()
 
 
-def load_all_jsons_as_table(directory):
+def load_all_jsons_as_table():
     """Load all JSON photometry files and return as a combined Astropy Table."""
     all_tables = []
 
-    for json_file in glob.glob(f"*.json"):
+    for json_file in glob.glob(f"target*.json"):
         with open(json_file, "r") as f:
             data = json.load(f)
 
@@ -96,8 +96,7 @@ if __name__ == "__main__":
     parser.add_argument('--bin', type=int, default=180, help='Max binning size')
     parser.add_argument('--exp', type=int, default=10, help='Exposure time in seconds')
     args = parser.parse_args()
-    directory = '.'
-    phot_table = load_all_jsons_as_table(directory)
+    phot_table = load_all_jsons_as_table()
 
     times, avg_rms, RMS_model = compute_rms_values(phot_table, args=args)
 
