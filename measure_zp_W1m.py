@@ -27,31 +27,41 @@ class NumpyEncoder(json.JSONEncoder):
 def measure_zp(table, APERTURE, EXPOSURE, GAIN):
     tic_ids = np.unique(table['TIC_ID'])
     print(f'Found {len(tic_ids)} unique TIC IDs')
+
     zp_list = []
     color_list = []
-    avg_flux = []
     mags = []
+    flux_list = []  # <--- put this back
 
     for tic_id in tic_ids:
-        # Average flux for the current TIC ID
         tic_data = table[table['TIC_ID'] == tic_id]
 
-        tic_flux = np.mean(tic_data[f'flux_{APERTURE}'])
+        # All flux values for this star
+        flux_values = tic_data[f'flux_{APERTURE}'] * GAIN
 
-        tic_flux *= GAIN
-        # First Tmag value for the current TIC ID
+        # Corresponding TESS magnitude and color
         tic_Tmag = tic_data['Tmag'][0]
         target_color_index = tic_data['gaiabp'][0] - tic_data['gaiarp'][0]
 
-        # Calculate zero point for the current TIC ID
-        zp = tic_Tmag + 2.5 * np.log10(tic_flux / EXPOSURE)
-        print(f'TIC ID: {tic_id}, Zero Point: {zp}, Color Index: {target_color_index}')
-        zp_list.append(zp)
-        color_list.append(target_color_index)
-        avg_flux.append(tic_flux)
-        mags.append(tic_Tmag)
+        # Compute zeropoint for each flux measurement
+        zp_values = tic_Tmag + 2.5 * np.log10(flux_values / EXPOSURE)
 
-    return zp_list, color_list, avg_flux, mags
+        # Average zeropoint for this star
+        zp_star = np.nanmean(zp_values)
+
+        print(f'TIC ID: {tic_id}, Mean Zero Point: {zp_star:.3f}, Color Index:'
+              f' {target_color_index:.3f}, Tmag: {tic_Tmag:.2f}')
+
+        zp_list.append(zp_star)
+        color_list.append(target_color_index)
+        mags.append(tic_Tmag)
+        flux_list.append(np.mean(flux_values))  # store average flux
+
+    # Global average zeropoint across all stars
+    zp_global = np.nanmean(zp_list)
+    print(f'Global Average Zero Point: {zp_global:.3f}')
+
+    return zp_list, color_list, flux_list, mags, zp_global
 
 
 def main():
@@ -83,11 +93,11 @@ def main():
         print(f"Photometry file: {phot_file}")
 
         # Measure zero point
-        zp_list, color_list, flux_list, tmag_list = measure_zp(phot_table, APERTURE, EXPOSURE, GAIN)
+        zp_list, color_list, flux_list, tmag_list, zp_global = measure_zp(phot_table, APERTURE, EXPOSURE, GAIN)
 
         # save the results to a json file
         with open(f'zp{APERTURE}.json', 'w') as json_file:
-            json.dump(np.nanmedian(zp_list), json_file, indent=4)
+            json.dump(zp_global, json_file, indent=4)
 
         print(f"Results saved to zp{APERTURE}.json")
 
