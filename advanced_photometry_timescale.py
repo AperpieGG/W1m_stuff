@@ -14,7 +14,7 @@ import argparse
 import matplotlib.pyplot as plt
 from itertools import product
 from scipy.interpolate import InterpolatedUnivariateSpline as Spline
-from utils import plot_images, read_phot_file, bin_time_flux_error, \
+from utils_W1m import plot_images, read_phot_file, bin_time_flux_error, \
     remove_outliers, bin_by_time_interval, calc_noise, get_phot_files, target_info
 
 plot_images()
