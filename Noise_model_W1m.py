@@ -93,7 +93,7 @@ def main():
     elif args.mode == 'HWC':
         APERTURE = 30
         GAIN = 0.75
-        READ_NOISE = 3.16 * args.bin_pixel
+        READ_NOISE = 3.46 * args.bin_pixel
     elif args.mode == 'LN12':
         APERTURE = 20
         GAIN = 3.85
@@ -136,11 +136,11 @@ def main():
             # Calculate the RMS
             RMS = np.std(flux)
             # Convert RMS to ppm
-            RMS = RMS * 1000
+            RMS = RMS * 1000000
             RMS_list.append(RMS)
         else:
             # Use the original data without binning
-            RMS_list.append(tic_data['RMS'][0] * 1000)  # Convert RMS to ppm
+            RMS_list.append(tic_data['RMS'][0] * 1000000)  # Convert RMS to ppm
 
         # Handle COLOR column
         if 'COLOR' in data.columns.names:  # Check if COLOR column exists
@@ -161,7 +161,7 @@ def main():
 
     # the file has the form phot_prefix.fits, I want to extract only the prefix
     zp = extract_zero_point(f'zp{APERTURE}.json')
-    zp_list = np.mean(zp_list + 2.5 * np.log10(GAIN))
+    zp_list = np.nanmean(zp_list + 2.5 * np.log10(GAIN))
     # zp_list_AV = (zp_list + zp) / 2
     print('Measured ZP, Catalog Zp: ', zp, np.median(zp_list))
 
