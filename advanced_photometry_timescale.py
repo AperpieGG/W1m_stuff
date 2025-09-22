@@ -217,6 +217,12 @@ def run_photometry(tic_id, dmb, dmf, crop, color_lim, cam):
         best_comps_table, AIRMASS = find_best_comps(phot_table, tic_id, APERTURE, dmb, dmf, crop, color_lim)
         tic_ids = np.unique(best_comps_table['tic_id'])
 
+        # Check if any comparison stars are left
+        if len(best_comps_table) == 0:
+            print(f"No comparison stars found for TIC ID {tic_id} with parameters "
+                  f"dmb={dmb}, dmf={dmf}, crop={crop}, color_lim={color_lim}. Skipping to next combination.")
+            return np.inf, np.inf
+
         time_list = []
         flux_list = []
         fluxerr_list = []
