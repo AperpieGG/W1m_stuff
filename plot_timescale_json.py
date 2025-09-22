@@ -16,7 +16,7 @@ def load_all_jsons_as_table(directory):
     """Load all JSON photometry files and return as a combined Astropy Table."""
     all_tables = []
 
-    for json_file in glob.glob(f"{directory}/*.json"):
+    for json_file in glob.glob(f"*.json"):
         with open(json_file, "r") as f:
             data = json.load(f)
 
