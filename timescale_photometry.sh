@@ -72,4 +72,6 @@ mkdir -p "$TARGET_DIR"
 # Move all target light curve JSON files into the directory
 mv target_light_curve*.json "$TARGET_DIR/"
 
-echo "Moved all target_light_curve JSON files to ./$TARGET_DIR/"
+mv best_params_log.txt "$TARGET_DIR/"
+
+echo "Moved all target_light_curve JSON files and best_params_log.txt to ./$TARGET_DIR/"
