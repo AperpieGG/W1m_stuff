@@ -793,3 +793,103 @@ def open_json_file():
 
     print(f"Opened JSON file: {filename}")
     return data
+
+
+def bin_by_time_interval(time, flux, error, interval_minutes=5):
+    """
+    Bin data dynamically based on a specified time interval.
+
+    Parameters
+    ----------
+    time :
+        Array of time values.
+    flux :
+        Array of flux values corresponding to the time array.
+    error :
+        Array of error values corresponding to the flux array.
+    interval_minutes : int, optional
+        Time interval for binning in minutes (default is 5).
+
+    Returns
+    -------
+    binned_time : array
+        Binned time values (averages within each bin).
+    binned_flux : array
+        Binned flux values (averages within each bin).
+    binned_error : array
+        Binned error values (propagated within each bin).
+    """
+    interval_days = interval_minutes / (24 * 60)  # Convert minutes to days
+    binned_time, binned_flux, binned_error = [], [], []
+
+    start_idx = 0
+    while start_idx < len(time):
+        # Find the end index where the time difference exceeds the interval
+        end_idx = start_idx
+        while end_idx < len(time) and (time[end_idx] - time[start_idx]) < interval_days:
+            end_idx += 1
+
+        # Bin the data in the current interval
+        binned_time.append(np.mean(time[start_idx:end_idx]))
+        binned_flux.append(np.mean(flux[start_idx:end_idx]))
+        binned_error.append(
+            np.sqrt(np.sum(error[start_idx:end_idx] ** 2)) / (end_idx - start_idx)
+        )
+
+        # Move to the next interval
+        start_idx = end_idx
+
+    return np.array(binned_time), np.array(binned_flux), np.array(binned_error)
+
+
+def calc_noise(APER, EXPTIME, DC, GAIN, RN, AIRMASS, lc):
+    """
+    Work out the additional noise sources for the error bars
+    Parameters
+    ----------
+    APER : float
+        Radius of the photometry aperture
+    EXPTIME : float
+        Current exposure time
+    DC : float
+        Dark current per pixel per second
+    lc : array-like
+        The photometry containing star + sky light
+    GAIN : float
+        Gain of the camera
+    RN : float
+        Read noise of the camera
+    AIRMASS : float
+        Airmass of the observation
+    Returns
+    -------
+    lc_err_new : array-like
+        A new error array accounting for other sources of noise
+    Raises
+    ------
+    None
+    """
+    npix = np.pi * APER ** 2
+    dark_current = DC * npix * EXPTIME
+    SCINT = scintilation_noise(AIRMASS, EXPTIME)
+    # scintillation?
+    lc_err_new = np.sqrt(lc / GAIN + dark_current + npix * RN ** 2 + (SCINT * lc) ** 2)
+    return lc_err_new
+
+
+def target_info(table, tic_id_to_plot, APERTURE):
+    target_star = table[table['tic_id'] == tic_id_to_plot]  # Extract the target star data
+    # Extract the TESS magnitude of the target star
+    target_tmag = target_star['Tmag'][0]
+    target_flux = target_star[f'flux_{APERTURE}']  # Extract the flux of the target star
+    target_fluxerr = target_star[f'fluxerr_{APERTURE}']  # Extract the flux error of the target star
+    target_time = target_star['jd_bary']  # Extract the time of the target star
+    target_sky = target_star[f'flux_w_sky_{APERTURE}'] - target_star[f'flux_{APERTURE}']
+    target_color_index = target_star['gaiabp'][0] - target_star['gaiarp'][0]  # Extract the color index
+    airmass_list = target_star['airmass']  # Extract airmass_list from target star
+    zp_list = target_star['ZP']  # Extract the zero point of the target star
+    # Calculate mean flux for the target star (specific to the chosen aperture)
+    target_flux_mean = target_star[f'flux_{APERTURE}'].mean()
+
+    return (target_tmag, target_color_index, airmass_list, target_flux_mean,
+            target_sky, target_flux, target_fluxerr, target_time, zp_list)
