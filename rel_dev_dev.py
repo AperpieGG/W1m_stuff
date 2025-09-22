@@ -566,7 +566,7 @@ def main():
 
             # Bin the master reference data
             time_list_binned, reference_fluxes_binned, reference_fluxerrs_binned = (
-                bin_time_flux_error(time_list[0], reference_fluxes, reference_fluxerrs, 1))
+                bin_by_time_interval(time_list[0], reference_fluxes, reference_fluxerrs, 0.167))
 
             if args.pos:
                 # Plot the comparison stars' positions on the image
