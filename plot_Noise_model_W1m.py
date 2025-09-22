@@ -15,27 +15,6 @@ def load_rms_mags_data(filename):
     return data
 
 
-def mask_outliers_by_model(Tmag_list, RMS_list, synthetic_mag, RNS, deviation_factor=2):
-    """
-    Mask stars that have an RMS significantly higher than the model.
-    Args:
-        Tmag_list (list): List of magnitudes (Tmag).
-        RMS_list (list): List of RMS values.
-        synthetic_mag (list): Synthetic magnitude values for the model.
-        RNS (list): Model noise values (RMS as a function of magnitude).
-        deviation_factor (float): Factor to define significant deviation from model.
-
-    Returns:
-        masked_indices (list): Indices of stars that deviate from the model.
-    """
-    # Interpolate model RMS values to match Tmag_list
-    model_rms_interp = np.interp(Tmag_list, synthetic_mag, RNS)
-    masked_indices = [i for i, (rms, model_rms) in enumerate(zip(RMS_list, model_rms_interp))
-                      if rms > model_rms * deviation_factor]
-
-    return masked_indices
-
-
 def plot_noise_model(data):
     fig, ax = plt.subplots()
     RMS_list = data['RMS_list']
@@ -94,10 +73,10 @@ def plot_noise_model(data):
 
     # Plot formatting
     ax.set_xlabel('TESS Magnitude')
-    ax.set_ylabel('RMS per 10 seconds (ppt)')
+    ax.set_ylabel('RMS per 10 seconds (ppm)')
     ax.set_yscale('log')
-    ax.set_xlim(9.5, 16)
-    ax.set_ylim(0.8, 1500)
+    ax.set_xlim(9, 16)
+    ax.set_ylim(1e3, 1e6)
     ax.invert_xaxis()
     ax.grid(True, which='major', linestyle='--', linewidth=0.5)
     # plt.legend(loc='best')
