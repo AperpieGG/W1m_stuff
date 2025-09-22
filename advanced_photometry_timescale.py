@@ -292,9 +292,9 @@ if __name__ == "__main__":
     del phot_data
 
     dmb_range = [0.5, 1, 1.5]
-    dmf_range = [0.5, 1, 1.5, 2, 2.5]
-    crop_range = [None, 1500, 2000, 3000]
-    color_lim_range = np.arange(0.1, 0.6, 0.1).round(2).tolist()
+    dmf_range = [0.5, 1.5, 2, 2.5]
+    crop_range = [None, 1500, 3000]
+    color_lim_range = [0.2, 0.4, 0.6]
     tolerance = 200
 
     if 7.5 < tmag < 9.5:
@@ -347,7 +347,7 @@ if __name__ == "__main__":
               f"color_lim={best_params[3]}")
 
         with open("best_params_log.txt", "a") as f:
-            cmd = f"/home/ops/ngcmos/rel_dev_dev.py {tic_id} --dmb {best_params[0]} --dmf {best_params[1]}"
+            cmd = f"/home/ops/Apergis/W1m_stuff/rel_dev_dev.py {tic_id} --dmb {best_params[0]} --dmf {best_params[1]}"
             if best_params[2] is not None:
                 cmd += f" --crop {best_params[2]}"
             cmd += (f" --color {best_params[3]} --cam {args.cam}  # Best RMS: {best_rms:.2e} "
