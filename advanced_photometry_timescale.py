@@ -358,7 +358,7 @@ if __name__ == "__main__":
             if best_params[2] is not None:
                 cmd += f" --crop {best_params[2]}"
             cmd += (f" --color {best_params[3]} --cam {args.cam}  # Best RMS: {best_rms:.2e} "
-                    f"and RMS Unbinned: {rms_unbinned:.2f}\n")
+                    f"and RMS Unbinned: {best_rms_unbinned:.2f}\n")
             f.write(cmd)
     elif not found_optimal:
         print("⚠️ No valid RMS found.")
