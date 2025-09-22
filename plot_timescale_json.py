@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+# Run the script from the directory where JSON files are stored (e.g., targets_11_12/)
 # This scripts opens a directory where JSON files are stored for each TIC_ID with the advanced photometry
 # and computes the RMS vs time binning for all stars, plotting the average curve.
 import glob
