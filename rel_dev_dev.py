@@ -9,7 +9,7 @@ import json
 from astropy.visualization import ZScaleInterval
 from scipy.interpolate import InterpolatedUnivariateSpline as Spline
 
-from utils import plot_images, read_phot_file, bin_time_flux_error, \
+from utils_W1m import plot_images, read_phot_file, bin_time_flux_error, \
     remove_outliers, scintilation_noise, bin_by_time_interval
 
 plot_images()
