@@ -195,12 +195,12 @@ def plot_shifts(x_shifts, y_shifts, failed_x, failed_y, save_path, prefix, time,
     fig, ax = plt.subplots(figsize=(6, 5))
 
     # Plot good points
-    scatter = ax.scatter(x_shifts, y_shifts, c=time, cmap='viridis', label="Good")
+    scatter = ax.scatter(x_shifts, y_shifts, c=time, cmap='viridis')
     plt.colorbar(scatter, label='Time')
 
     # Plot failed points (big shifts)
     if failed_x and failed_y:
-        ax.scatter(failed_x, failed_y, c='red', marker='x', s=70, label="> 4 px deviation")
+        ax.scatter(failed_x, failed_y, c=time, cmap='viridis')
 
     plt.xlabel('X Shift (pixels)')
     plt.ylabel('Y Shift (pixels)')
