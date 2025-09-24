@@ -17,6 +17,7 @@ import logging
 import warnings
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
+import matplotlib.dates as mdates
 
 warnings.simplefilter('ignore', category=UserWarning)
 
@@ -146,13 +147,15 @@ def check_donuts(directory, file_groups):
                 # Grab time from FITS header if available
                 with fits.open(filepath) as hdul:
                     date_obs = hdul[0].header.get('DATE-OBS')
+                    # inside check_donuts, after reading DATE-OBS:
                     if date_obs:
-                        times.append(date_obs)
+                        dt = datetime.fromisoformat(date_obs)
+                        times.append(mdates.date2num(dt))
                     else:
                         times.append(len(times))  # fallback numeric sequence
 
                 # Check for big shifts
-                if np.any(np.array([abs(sx), abs(sy)]) > 2):
+                if np.any(np.array([abs(sx), abs(sy)]) > 4):
                     logger.warning(f'{filename} image shift too big X: {sx} Y: {sy}')
                     failed_dir = os.path.join(directory, 'failed_donuts')
                     if not os.path.exists(failed_dir):
@@ -167,26 +170,42 @@ def check_donuts(directory, file_groups):
         plot_shifts(x_shifts, y_shifts, save_path, prefix, times)
 
 
-
 def plot_shifts(x_shifts, y_shifts, save_path, prefix, time):
     fig, ax = plt.subplots(figsize=(8, 6))
-    scatter = ax.scatter(x_shifts, y_shifts, c=time, cmap='viridis',
-                         label=f'Shifts for field: {prefix}', marker='o')
+
+    # Scatter plot of shifts
+    scatter = ax.scatter(x_shifts, y_shifts, c=time, cmap='viridis')
+    plt.colorbar(scatter, label='Time')
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+
     plt.xlabel('X Shift (pixels)')
     plt.ylabel('Y Shift (pixels)')
-    plt.title('Shifts to ref image')
-    plt.axhline(0, color='black', linestyle='-', linewidth=1)
-    plt.axvline(0, color='black', linestyle='-', linewidth=1)
-    plt.legend()
-    plt.xlim(-1, 1)
-    plt.ylim(-1, 1)
-    # Colorbar
+    plt.title('Shifts to reference image')
+
+    # Draw center lines
+    ax.axhline(0, color='black', linestyle='-', linewidth=1)
+    ax.axvline(0, color='black', linestyle='-', linewidth=1)
+
+    # Set limits
+    ax.set_xlim(-5, 5)
+    ax.set_ylim(-5, 5)
+
+    # Create a grid of 1-pixel squares
+    ax.set_xticks(np.arange(-5, 6, 1))
+    ax.set_yticks(np.arange(-5, 6, 1))
+    ax.grid(which='both', color='gray', linestyle='--', linewidth=0.5)
+
+    # Optional: emphasize the center square
+    ax.add_patch(plt.Rectangle((-0.5, -0.5), 1, 1, fill=False, edgecolor='red', linewidth=1.5))
+
+    # Legend and colorbar
+    ax.legend()
     plt.colorbar(scatter, label='Time')
 
-    # Yesterday’s timestamp
+    # Timestamp
     timestamp_yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y%m%d")
 
-    # File path in "shifts_plots"
+    # Save path
     if not os.path.exists(save_path):
         os.makedirs(save_path)
     pdf_file_path = os.path.join(save_path, f"donuts_{prefix}_{timestamp_yesterday}.pdf")
