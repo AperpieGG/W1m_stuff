@@ -48,11 +48,22 @@ def plot_shifts(x_shifts, y_shifts, save_path, prefix, time):
     print(f"PDF plot saved to: {pdf_file_path}\n")
 
 
-def check_donuts(directory, file_groups):
+def crop_center(data, crop_size=1000):
+    """Crop the image data to the central crop_size x crop_size region."""
+    y, x = data.shape
+    startx = x // 2 - (crop_size // 2)
+    starty = y // 2 - (crop_size // 2)
+    return data[starty:starty + crop_size, startx:startx + crop_size]
+
+
+def check_donuts(directory, file_groups, crop_size=1000):
     for file_group in file_groups:
         reference_image = os.path.join(directory, file_group[0])
         logger.info(f"Reference image: {reference_image}")
-        d = Donuts(reference_image)
+        with fits.open(reference_image) as hdul:
+            ref_data = crop_center(hdul[0].data, crop_size=crop_size)
+            ref_hdu = fits.PrimaryHDU(ref_data, header=hdul[0].header)
+        d = Donuts(ref_hdu)  # Donuts accepts HDU objects too
 
         x_shifts, y_shifts, times = [], [], []
         prefix = os.path.basename(file_group[0]).split('.')[0]
