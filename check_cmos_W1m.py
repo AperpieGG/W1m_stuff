@@ -146,14 +146,15 @@ def check_headers(directory, filenames):
 def check_donuts(directory, file_groups):
     for file_group in file_groups:
         if len(file_group) < 2:
-            continue  # skip if only 1 file (no reference + target)
+            continue
 
         reference_image = os.path.join(directory, file_group[0])
-        prefix = file_group[0].split('_')[0]  # or adjust how you want to get prefix
+        prefix = file_group[0].split('_')[0]
         logger.info(f"Reference image: {reference_image}")
 
         d = Donuts(reference_image)
         x_shifts, y_shifts, times = [], [], []
+        failed_x, failed_y, failed_times = [], [], []
 
         for filename in file_group[1:]:
             filepath = os.path.join(directory, filename)
@@ -163,74 +164,66 @@ def check_donuts(directory, file_groups):
                 sy = round(shift.y.value, 2)
                 logger.info(f'{filename} shift X: {sx} Y: {sy}')
 
-                x_shifts.append(sx)
-                y_shifts.append(sy)
-
-                # Grab time from FITS header if available
+                # Grab time from FITS header
                 with fits.open(filepath) as hdul:
                     date_obs = hdul[0].header.get('DATE-OBS')
-                    # inside check_donuts, after reading DATE-OBS:
-                    if date_obs:
-                        # Extract the UTC time string from the header
-                        jd = utc_to_jd(date_obs)
+                    jd = utc_to_jd(date_obs) if date_obs else len(times)
 
-                        times.append(jd)
-                    else:
-                        times.append(len(times))  # fallback numeric sequence
-
-                # Check for big shifts
-                if np.any(np.array([abs(sx), abs(sy)]) > 4):
+                if np.any(np.array([abs(sx), abs(sy)]) > 2):
                     logger.warning(f'{filename} image shift too big X: {sx} Y: {sy}')
+                    failed_x.append(sx)
+                    failed_y.append(sy)
+                    failed_times.append(jd)
+
                     failed_dir = os.path.join(directory, 'failed_donuts')
-                    if not os.path.exists(failed_dir):
-                        os.mkdir(failed_dir)
+                    os.makedirs(failed_dir, exist_ok=True)
                     os.rename(filepath, os.path.join(failed_dir, filename))
+                else:
+                    x_shifts.append(sx)
+                    y_shifts.append(sy)
+                    times.append(jd)
 
             except Exception as e:
                 logger.error(f"Error processing {filename}: {e}")
 
-        # After processing the group, plot shifts
+        # After processing the group, plot shifts (including failed ones)
         save_path = os.path.join(directory, 'shifts_plots')
-        plot_shifts(x_shifts, y_shifts, save_path, prefix, times)
+        plot_shifts(x_shifts, y_shifts, failed_x, failed_y, save_path, prefix, times, failed_times)
 
 
-def plot_shifts(x_shifts, y_shifts, save_path, prefix, time):
-    fig, ax = plt.subplots(figsize=(8, 6))
+def plot_shifts(x_shifts, y_shifts, failed_x, failed_y, save_path, prefix, time, failed_time):
+    fig, ax = plt.subplots(figsize=(6, 5))
 
-    # Scatter plot of shifts
-    scatter = ax.scatter(x_shifts, y_shifts, c=time, cmap='viridis')
+    # Plot good points
+    scatter = ax.scatter(x_shifts, y_shifts, c=time, cmap='viridis', label="Good")
     plt.colorbar(scatter, label='Time')
+
+    # Plot failed points (big shifts)
+    if failed_x and failed_y:
+        ax.scatter(failed_x, failed_y, c='red', marker='x', s=70, label="> 4 px deviation")
 
     plt.xlabel('X Shift (pixels)')
     plt.ylabel('Y Shift (pixels)')
     plt.title('Shifts to reference image')
 
-    # Draw center lines
-    ax.axhline(0, color='black', linestyle='-', linewidth=1)
-    ax.axvline(0, color='black', linestyle='-', linewidth=1)
-
-    # Set limits
     ax.set_xlim(-5, 5)
     ax.set_ylim(-5, 5)
-
-    # Create a grid of 1-pixel squares
     ax.set_xticks(np.arange(-5, 6, 1))
     ax.set_yticks(np.arange(-5, 6, 1))
     ax.grid(which='both', color='gray', linestyle='--', linewidth=0.5)
 
-    # Optional: emphasize the center square
-    ax.add_patch(plt.Rectangle((-0.5, -0.5), 1, 1, fill=False, edgecolor='red', linewidth=1.5))
+    ax.add_patch(plt.Rectangle((-1, -1), 2, 2, fill=False, edgecolor='red', linewidth=1.5))
+    ax.add_patch(plt.Rectangle((-3, -3), 6, 6, fill=False, edgecolor='orange', linewidth=1.5))
 
-    # Legend and colorbar
-    ax.legend()
-    plt.colorbar(scatter, label='Time')
+    # Center cross
+    ax.vlines(0, -1, 1, colors='black', linewidth=1.2)
+    ax.hlines(0, -1, 1, colors='black', linewidth=1.2)
 
-    # Timestamp
+    ax.legend(loc="upper right")
+
+    # Save plot
     timestamp_yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y%m%d")
-
-    # Save path
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
+    os.makedirs(save_path, exist_ok=True)
     pdf_file_path = os.path.join(save_path, f"donuts_{prefix}_{timestamp_yesterday}.pdf")
 
     fig.savefig(pdf_file_path, bbox_inches='tight')
