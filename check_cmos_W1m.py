@@ -8,7 +8,7 @@ Usage:
 python check_headers.py
 """
 import sys
-
+import glob
 from donuts import Donuts
 from astropy.io import fits
 import numpy as np
@@ -18,6 +18,8 @@ import warnings
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import matplotlib.dates as mdates
+
+from utils_W1m import utc_to_jd
 
 warnings.simplefilter('ignore', category=UserWarning)
 
@@ -36,6 +38,26 @@ if os.path.exists(log_file):
         if any("Done." in line for line in f):
             print(f"{log_file} shows analysis already completed. Skipping script.")
             sys.exit(0)
+
+
+def acquire_header_info(directory, prefix):
+    path = directory + '/'
+    image_names = glob.glob(path + f'{prefix}*.fits')
+    image_names = sorted(image_names[1:])
+    time_jd = []
+
+    for image in image_names:
+        with fits.open(image) as hdulist:
+            header = hdulist[0].header
+            # Extract the UTC time string from the header
+            utc_time_str = header['DATE-OBS']
+
+            # Convert the UTC time string to JD
+            jd = utc_to_jd(utc_time_str)
+
+            time_jd.append(jd)
+
+    return time_jd
 
 
 def filter_filenames(directory):
@@ -149,8 +171,10 @@ def check_donuts(directory, file_groups):
                     date_obs = hdul[0].header.get('DATE-OBS')
                     # inside check_donuts, after reading DATE-OBS:
                     if date_obs:
-                        dt = datetime.fromisoformat(date_obs)
-                        times.append(mdates.date2num(dt))
+                        # Extract the UTC time string from the header
+                        jd = utc_to_jd(date_obs)
+
+                        times.append(jd)
                     else:
                         times.append(len(times))  # fallback numeric sequence
 
@@ -176,7 +200,6 @@ def plot_shifts(x_shifts, y_shifts, save_path, prefix, time):
     # Scatter plot of shifts
     scatter = ax.scatter(x_shifts, y_shifts, c=time, cmap='viridis')
     plt.colorbar(scatter, label='Time')
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
 
     plt.xlabel('X Shift (pixels)')
     plt.ylabel('Y Shift (pixels)')
