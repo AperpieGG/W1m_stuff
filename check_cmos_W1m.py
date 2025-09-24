@@ -213,7 +213,7 @@ def plot_shifts(x_shifts, y_shifts, failed_x, failed_y, save_path, prefix, time,
     ax.grid(which='both', color='gray', linestyle='--', linewidth=0.5)
 
     ax.add_patch(plt.Rectangle((-1, -1), 2, 2, fill=False, edgecolor='red', linewidth=1.5))
-    ax.add_patch(plt.Rectangle((-3, -3), 6, 6, fill=False, edgecolor='orange', linewidth=1.5))
+    ax.add_patch(plt.Rectangle((-2, -2), 4, 4, fill=False, edgecolor='orange', linewidth=1.5))
 
     # Center cross
     ax.vlines(0, -1, 1, colors='black', linewidth=1.2)
