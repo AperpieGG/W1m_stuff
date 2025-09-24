@@ -200,7 +200,7 @@ def plot_shifts(x_shifts, y_shifts, failed_x, failed_y, save_path, prefix, time,
 
     # Plot failed points (big shifts)
     if failed_x and failed_y:
-        ax.scatter(failed_x, failed_y, c=time, cmap='viridis')
+        ax.scatter(failed_x, failed_y, c=failed_time, cmap='viridis')
 
     plt.xlabel('X Shift (pixels)')
     plt.ylabel('Y Shift (pixels)')
