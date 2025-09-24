@@ -219,8 +219,6 @@ def plot_shifts(x_shifts, y_shifts, failed_x, failed_y, save_path, prefix, time,
     ax.vlines(0, -1, 1, colors='black', linewidth=1.2)
     ax.hlines(0, -1, 1, colors='black', linewidth=1.2)
 
-    ax.legend(loc="upper right")
-
     # Save plot
     timestamp_yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y%m%d")
     os.makedirs(save_path, exist_ok=True)
