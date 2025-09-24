@@ -204,7 +204,7 @@ def plot_shifts(x_shifts, y_shifts, failed_x, failed_y, save_path, prefix, time,
 
     plt.xlabel('X Shift (pixels)')
     plt.ylabel('Y Shift (pixels)')
-    plt.title('Shifts to reference image')
+    plt.title('Shifts to ref image')
 
     ax.set_xlim(-5, 5)
     ax.set_ylim(-5, 5)
