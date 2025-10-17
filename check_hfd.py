@@ -80,9 +80,9 @@ def measure_hfd(files, binning, plate_scale, GAIN, RADIUS, plot=True, sep_thresh
         error = calc_total_error(data, bkg.globalrms, GAIN)
 
         frame_apertures = aperture_photometry(data, ap, error=error, method='subpixel', subpixels=5)
-        objects[f'FLUX_5'] = frame_apertures['aperture_sum']
-        objects[f'FLUXERR_5'] = frame_apertures['aperture_sum_err']
-        objects[f'SNR'] = objects['FLUX_5'] / objects['FLUXERR_5']
+        objects[f'FLUX_{RADIUS}'] = frame_apertures['aperture_sum']
+        objects[f'FLUXERR_{RADIUS}'] = frame_apertures['aperture_sum_err']
+        objects[f'SNR'] = objects[f'FLUX_{RADIUS}'] / objects[f'FLUXERR_{RADIUS}']
         objects = objects[1 - objects['b'] / objects['a'] < 0.5]  # ellipticity < 0.5
         objects = objects[objects['SNR'] > 5.0]
         objects = objects[objects['tnpix'] > 5]
@@ -153,14 +153,15 @@ def main():
     parser.add_argument('binning', type=int, help='Binning factor.')
     parser.add_argument('plate_scale', type=float, help='Plate scale in arcsec/pixel.')
     parser.add_argument('gain', type=float, help='Camera gain in e-/ADU.')
+    parser.add_argument('radius', type=float, help='Radius for HFD measurement in units of a.')
     args = parser.parse_args()
     plate_scale = args.plate_scale
     GAIN = args.gain
     binning = args.binning
-    RADIUS = 6.0  # in units of a
+    RADIUS = args.radius  # in units of a
     input_dir = Path(args.input_dir)
     image_files = find_images(input_dir)
-    measure_hfd(image_files, binning, plate_scale, GAIN, RADIUS)
+    measure_hfd(image_files, binning, plate_scale, GAIN, RADIUS, plot=False)
 
 
 if __name__ == '__main__':
