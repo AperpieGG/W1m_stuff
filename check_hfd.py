@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import fitsio
 from astropy.table import Table
 import sep
@@ -21,7 +22,7 @@ def find_images(path):
     image_files = sorted(Path(path).files('*.fits'))
     print(f"Found {len(image_files)} FITS files in {path}.")
     # exclude images that have the words 'bias, flat, catalog' in the filename
-    exclude_words = ['bias', 'flat', 'catalog', 'dark', 'phot', 'evening', 'morning']
+    exclude_words = ['bias', 'flat', 'catalog', 'dark', 'phot', 'evening', 'morning', 'txt', 'xml']
     image_files = [f for f in image_files if not any(word in f.lower() for word in exclude_words)]
     print(f"{len(image_files)} FITS files remain after filtering.")
     return image_files
