@@ -77,7 +77,7 @@ def measure_hfd(files, binning, plate_scale, GAIN, RADIUS, plot=True, sep_thresh
         objects['ra'] = ra
         objects['dec'] = dec
 
-        ap = CircularAperture(np.transpose([objects['x'], objects['y']]), 10)
+        ap = CircularAperture(np.transpose([objects['x'], objects['y']]), RADIUS)
         error = calc_total_error(data, bkg.globalrms, GAIN)
 
         frame_apertures = aperture_photometry(data, ap, error=error, method='subpixel', subpixels=5)
