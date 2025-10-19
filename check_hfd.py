@@ -101,7 +101,7 @@ def measure_hfd(files, binning, plate_scale, GAIN, RADIUS, plot=True, sep_thresh
         flux_diameters = []
         for flux_fraction in flux_fractions:
             r, radius_flag = sep.flux_radius(data_sub, hfd_measurement_objects['x'], hfd_measurement_objects['y'],
-                                             6.0 * hfd_measurement_objects['a'], flux_fraction, normflux=flux, subpix=5)
+                                             RADIUS * hfd_measurement_objects['a'], flux_fraction, normflux=flux, subpix=5)
             filt = np.logical_and.reduce([
                 kron_flag == 0,
                 flux_flag == 0,
