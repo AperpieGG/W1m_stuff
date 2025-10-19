@@ -28,7 +28,7 @@ def find_images(path):
     return image_files
 
 
-def measure_hfd(files, binning, plate_scale, GAIN, RADIUS, plot=True, sep_threshold=5, verbose=False):
+def measure_hfd(files, binning, plate_scale, GAIN, RADIUS, plot=True, sep_threshold=1.3, verbose=False):
     failed_extractions = 0
     failed_writes = 0
     failed_reads = 0
