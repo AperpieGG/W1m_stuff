@@ -14,8 +14,10 @@ from datetime import datetime, timedelta
 import argparse
 import warnings
 from tqdm import tqdm
+import os
 
 plot_images()
+
 
 def find_images(path):
     """Find all FITS images excluding calibration frames."""
@@ -67,6 +69,9 @@ def main():
 
     input_dir = Path(args.input_dir)
     image_files = find_images(input_dir)
+    # Create output directory if it doesn’t exist
+    output_dir = "shift_plots"
+    os.makedirs(output_dir, exist_ok=True)
 
     hfds, airmasses, times, magzps = [], [], [], []
 
@@ -102,7 +107,12 @@ def main():
     plt.legend()
     plt.grid(alpha=0.3)
     plt.tight_layout()
-    plt.show()
+    # Use the title of the left subplot as filename
+    filename = "hfd_histogram.pdf"
+    save_path = os.path.join(output_dir, filename)
+
+    plt.savefig(save_path, format='pdf')
+    plt.close()
 
     # --- Plot 2: HFD vs Time ---
     valid_times = [t for t in times if t is not None]
@@ -123,7 +133,12 @@ def main():
 
         plt.grid(alpha=0.3)
         plt.tight_layout()
-        plt.show()
+        # Use the title of the left subplot as filename
+        filename = "hfd_vs_time.pdf"
+        save_path = os.path.join(output_dir, filename)
+
+        plt.savefig(save_path, format='pdf')
+        plt.close()
     else:
         print("⚠️ No valid DATE-OBS or JD values found — skipping HFD vs Time plot.")
 
@@ -137,7 +152,12 @@ def main():
         plt.grid(alpha=0.3)
         plt.xticks(tick_indices, tick_labels, rotation=45)  # Set ticks with limited labels
         plt.tight_layout()
-        plt.show()
+        # Use the title of the left subplot as filename
+        filename = "airmass_vs_time.pdf"
+        save_path = os.path.join(output_dir, filename)
+
+        plt.savefig(save_path, format='pdf')
+        plt.close()
     else:
         print("⚠️ No valid AIRMASS values found — skipping HFD vs Airmass plot.")
 
@@ -150,7 +170,12 @@ def main():
         plt.title("HFD vs Zeropoint")
         plt.grid(alpha=0.3)
         plt.tight_layout()
-        plt.show()
+        # Use the title of the left subplot as filename
+        filename = "hfd_vs_zp.pdf"
+        save_path = os.path.join(output_dir, filename)
+
+        plt.savefig(save_path, format='pdf')
+        plt.close()
     else:
         print("⚠️ No valid MAGZP_T values found — skipping HFD vs Zeropoint plot.")
 
@@ -163,7 +188,12 @@ def main():
         plt.title("Zeropoint vs Airmass")
         plt.grid(alpha=0.3)
         plt.tight_layout()
-        plt.show()
+        # Use the title of the left subplot as filename
+        filename = "zp_vs_airmass.pdf"
+        save_path = os.path.join(output_dir, filename)
+
+        plt.savefig(save_path, format='pdf')
+        plt.close()
     else:
         print("⚠️ No valid MAGZP_T or AIRMASS values found — skipping Zeropoint vs Airmass plot.")
 
@@ -177,7 +207,12 @@ def main():
         plt.xticks(tick_indices, tick_labels, rotation=45)  # Set ticks with limited labels
         plt.grid(alpha=0.3)
         plt.tight_layout()
-        plt.show()
+        # Use the title of the left subplot as filename
+        filename = "zp_vs_time.pdf"
+        save_path = os.path.join(output_dir, filename)
+
+        plt.savefig(save_path, format='pdf')
+        plt.close()
     else:
         print("⚠️ No valid MAGZP_T or DATE-OBS/JD values found — skipping Zeropoint vs Time plot.")
 
