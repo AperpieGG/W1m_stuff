@@ -14,7 +14,7 @@ def load_rms_mags_data():
     path = '/Users/u5500483/Downloads/Toran_Sky/'
     filenames = [
         path + '20250808/rms_mags_rel_phot_KELT-16_30_1_0808.json',
-        path + '20250808/rms_mags_rel_phot_KELT-16_30_1_0808.json',
+        path + '20250921/rms_mags_rel_phot_KELT-16_30_1_0921.json',
     ]
     data_list = []
     for filename in filenames:
@@ -92,8 +92,8 @@ def main():
     # 1 row × 2 columns
     fig, axes = plt.subplots(1, 2, sharey=True, constrained_layout=True, figsize=(12, 5))
 
-    main_labels = ["Moon", "HWC"]
-    mode_labels = ["HWC", "No Moon"]
+    main_labels = ["Moon", "LN"]
+    mode_labels = ["LN", "No Moon"]
 
     for i, ax in enumerate(axes):
         pos = 'bottom-left' if i == 0 else 'top-right'
@@ -106,7 +106,7 @@ def main():
     cbar = fig.colorbar(axes[0].collections[0], ax=axes, orientation='vertical', fraction=0.1, pad=0.05)
     cbar.set_label(label='$\mathdefault{G_{BP}-G_{RP}}$')
     path_save = '/Users/u5500483/Downloads/Toran_Sky/'
-    # plt.savefig(path_save + 'Noise_HWC_NEW_FULL.pdf', dpi=300)
+    plt.savefig(path_save + 'Noise_LN_NEW_FULL.pdf', dpi=300)
     plt.show()
 
 
