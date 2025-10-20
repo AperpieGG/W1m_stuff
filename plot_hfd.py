@@ -70,7 +70,7 @@ def main():
     input_dir = Path(args.input_dir)
     image_files = find_images(input_dir)
     # Create output directory if it doesn’t exist
-    output_dir = "shift_plots"
+    output_dir = "shifts_plots"
     os.makedirs(output_dir, exist_ok=True)
 
     hfds, airmasses, times, magzps = [], [], [], []
