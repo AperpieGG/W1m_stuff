@@ -37,21 +37,22 @@ def measure_hfd(files, binning, plate_scale, GAIN, RADIUS, plot=True, sep_thresh
     for file in tqdm.tqdm(files, file=sys.stdout):
         try:
             header = fitsio.read_header(file)
-            if 'HFD' in header:
-                continue
-            # Add this block here 👇
-            if 'AIRMASS' not in header and 'ALTITUDE' in header:
-                airmass = 1 / np.cos(np.radians(90 - header['ALTITUDE']))
-                header['AIRMASS'] = airmass
-
             data = fitsio.read(file)
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
                 wcs = WCS(file)
 
+            # ✅ Add airmass if missing and ALTITUDE exists
+            if 'AIRMASS' not in header and 'ALTITUDE' in header:
+                airmass = 1 / np.cos(np.radians(90 - header['ALTITUDE']))
+                header['AIRMASS'] = (airmass, 'Computed from ALTITUDE')
+                print(f"Added AIRMASS={airmass:.3f} to {file}")
+
+            if 'HFD' in header:
+                continue
+
         except OSError:
-            print(f"Error reading {file}. Removing from list.")
-            # os.remove(file)
+            print(f"Error reading {file}. Skipping.")
             failed_reads += 1
             continue
 
