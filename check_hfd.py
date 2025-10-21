@@ -43,12 +43,12 @@ def measure_hfd(files, binning, plate_scale, GAIN, RADIUS, plot=True, sep_thresh
             # ✅ Add AIRMASS if missing and ALTITUDE exists
             if 'AIRMASS' not in header and 'ALTITUDE' in header:
                 airmass = 1 / np.cos(np.radians(90 - header['ALTITUDE']))
-                header['AIRMASS'] = airmass
 
-                # ✅ Write updated header back to the FITS file
+                # ✅ Open file in read–write mode and update header directly
                 with fitsio.FITS(file, mode='rw') as f:
-                    for key, val in header.items():
-                        f[0].write_key(key, val)
+                    hdr = f[0].read_header()
+                    if 'AIRMASS' not in hdr:
+                        f[0].write_key('AIRMASS', float(airmass), 'Computed from ALTITUDE')
 
             data = fitsio.read(file)
             with warnings.catch_warnings():
