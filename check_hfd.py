@@ -39,6 +39,11 @@ def measure_hfd(files, binning, plate_scale, GAIN, RADIUS, plot=True, sep_thresh
             header = fitsio.read_header(file)
             if 'HFD' in header:
                 continue
+            # Add this block here 👇
+            if 'AIRMASS' not in header and 'ALTITUDE' in header:
+                airmass = 1 / np.cos(np.radians(90 - header['ALTITUDE']))
+                header['AIRMASS'] = airmass
+
             data = fitsio.read(file)
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
