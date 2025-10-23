@@ -49,10 +49,18 @@ def compute_rms_values(phot_table, args):
 
     for tic_id in tic_ids:
         star_data = phot_table[phot_table['TIC_ID'] == tic_id]
+
+        # <-- CHANGED: crop the final 300 data points if possible
+        if len(star_data) > 300:
+            star_data = star_data[:-300]
+
         jd_mid = star_data['Time_BJD']
         rel_flux = star_data['Relative_Flux']
         rel_fluxerr = star_data['Relative_Flux_err']
-        rms = star_data['RMS'][0]
+        # rms = star_data['RMS'][0]
+
+        # <-- CHANGED: compute RMS directly from the cropped relative flux
+        rms = np.std(rel_flux)
         print(f'Star {tic_id} and RMS {rms}')
 
         RMS_values = []
