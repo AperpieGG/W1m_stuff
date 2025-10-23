@@ -113,10 +113,11 @@ def reduce_images(prefix_filenames):
             if master_bias is not None:
                 print(f'Subtracting master bias from {filename}')
                 fd -= master_bias
+                print(f'After bias subtraction, mean pixel value for {filename}: {np.mean(fd)}')
             if master_dark is not None:
                 fd -= master_dark * hdr['EXPTIME'] / 10
             if master_flat is not None:
-                print(f'Dividing by master flat for {filename}')
+                print(f'Dividing by master flat from {filename}')
                 fd /= master_flat
 
             reduced_data.append(fd)
