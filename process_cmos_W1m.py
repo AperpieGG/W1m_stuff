@@ -176,7 +176,7 @@ def main():
 
             estimate_coord = SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg))
             estimate_coord_radius = 3 * u.deg
-            sep.set_extract_pixstack(1000000)  # increase buffer from 300k to 1 million
+            # sep.set_extract_pixstack(1000000)  # increase buffer from 300k to 1 million
             frame_objects = _detect_objects_sep(frame_data_corr_no_bg, frame_bg.globalrms,
                                                 AREA_MIN, AREA_MAX, DETECTION_SIGMA, DEFOCUS)
             if len(frame_objects) < N_OBJECTS_LIMIT:
