@@ -129,7 +129,6 @@ def main():
         plt.xlabel("Time (UTC)")
         plt.ylabel("HFD (arcsec)")
         plt.title("HFD vs Time")
-        plt.ylim(7, 11)
         plt.xticks(tick_indices, tick_labels, rotation=45)  # Set ticks with limited labels
 
         plt.grid(alpha=0.3)
