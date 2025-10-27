@@ -37,8 +37,8 @@ def main(target_file, bin):
     fig, ax = plt.subplots(figsize=(6, 4), dpi=100)
 
     # Plot the light curve
-    ax.plot(time_binned, flux_binned, 'ro')
-
+    plt.errorbar(time_binned, flux_binned, yerr=fluxerr_binned, fmt='o', color='red',
+                 label=f'RMS unbinned = {np.std(fluxerr_binned):.4f}')
     # Labels and legend
     ax.set_xlabel('Time (BJD)')
     ax.set_ylabel('Relative Flux')
