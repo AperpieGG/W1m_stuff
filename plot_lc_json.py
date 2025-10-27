@@ -2,11 +2,7 @@
 import json
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import argparse
-
-from scipy.stats import median_abs_deviation
-from wotan import transit_mask, flatten
 from utils_W1m import plot_images, bin_time_flux_error, bin_by_time_interval
 
 
