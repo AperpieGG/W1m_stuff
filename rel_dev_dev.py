@@ -182,7 +182,7 @@ def find_comp_star_rms(comp_fluxes, airmass):
     return np.array(comp_star_rms)
 
 
-def find_bad_comp_stars(comp_fluxes, airmass, comp_mags0, sig_level=1.5, dmag=0.5):
+def find_bad_comp_stars(comp_fluxes, airmass, comp_mags0, sig_level=2, dmag=0.5):
     # Calculate initial RMS of comparison stars
     comp_star_rms = find_comp_star_rms(comp_fluxes, airmass)
     print(f"Initial number of comparison stars: {len(comp_star_rms)}")
@@ -253,16 +253,16 @@ def find_bad_comp_stars(comp_fluxes, airmass, comp_mags0, sig_level=1.5, dmag=0.
         y_limit_high, y_limit_low = 1, 0.01
 
     # Create the plot
-    plt.figure(figsize=(10, 6))
-    plt.scatter(final_good_mags, final_good_rms, color='black', label='Good Stars')
-    plt.scatter(final_bad_mags, final_bad_rms, color='red', label='Bad Stars')
-    plt.xlabel('Magnitude')
-    plt.ylabel('RMS')
-    plt.ylim(y_limit_low, y_limit_high)
-    plt.legend()
-    plt.title('RMS vs. Magnitude of Comparison Stars')
-    plt.tight_layout()
-    plt.show()
+    # plt.figure(figsize=(10, 6))
+    # plt.scatter(final_good_mags, final_good_rms, color='black', label='Good Stars')
+    # plt.scatter(final_bad_mags, final_bad_rms, color='red', label='Bad Stars')
+    # plt.xlabel('Magnitude')
+    # plt.ylabel('RMS')
+    # plt.ylim(y_limit_low, y_limit_high)
+    # plt.legend()
+    # plt.title('RMS vs. Magnitude of Comparison Stars')
+    # plt.tight_layout()
+    # plt.show()
 
     # Save the data for the plot
     output_data = {
@@ -465,7 +465,7 @@ def main():
         EXPOSURE = 10.0
         RN = 1.56
     elif args.cam == 'CCD':
-        APERTURE = 4
+        APERTURE = 3
         GAIN = 2
         DC = 0.00515
         EXPOSURE = 10.0
@@ -606,18 +606,18 @@ def main():
 
             # Bin the target star data and do the relative photometry
             target_time_binned, target_fluxes_binned, target_fluxerrs_binned = (
-                bin_by_time_interval(target_time, target_fluxes_dt, target_flux_err_dt, 5)) # 0.167 for 10
+                bin_by_time_interval(target_time, target_fluxes_dt, target_flux_err_dt, 3)) # 0.167 for 10
 
             # Calculate the RMS for the binned data
             RMS_binned = np.std(target_fluxes_binned)
 
             print(f'RMS for Target: {RMS * 100:.3f}% and binned 5 min: {RMS_binned * 100:.3f}%')
             # plt.plot(target_time_binned, target_fluxes_dt_binned, 'o', color='red', label=f'RMS unbinned = {RMS:.4f}')
-            plt.errorbar(target_time_binned, target_fluxes_binned, yerr=target_fluxerrs_binned, fmt='o', color='red',
-                         label=f'RMS unbinned = {RMS:.4f}')
-            plt.title(f'Target star: {tic_id_to_plot}, Tmag = {target_star["Tmag"][0]:.3f}')
-            plt.legend(loc='best')
-            plt.show()
+            # plt.errorbar(target_time_binned, target_fluxes_binned, yerr=target_fluxerrs_binned, fmt='o', color='red',
+            #              label=f'RMS unbinned = {RMS:.4f}')
+            # plt.title(f'Target star: {tic_id_to_plot}, Tmag = {target_star["Tmag"][0]:.3f}')
+            # plt.legend(loc='best')
+            # plt.show()
 
             # Save target_time_binned and target_fluxes_dt in a JSON file
             data_to_save = {
