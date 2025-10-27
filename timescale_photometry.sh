@@ -28,7 +28,7 @@ mask = (tmags >= $TMAG_Bright) & (tmags <= $TMAG_Faint)
 unique_ids = np.unique(tic_ids[mask])
 
 # Take first 45
-selected_ids = unique_ids[:10]
+selected_ids = unique_ids[:20]
 
 # Print selected TICs, selected count, and full count
 print(" ".join(str(tic) for tic in selected_ids) + "|" + str(len(selected_ids)) + "|" + str(len(unique_ids)))
