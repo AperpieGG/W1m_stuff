@@ -297,8 +297,8 @@ if __name__ == "__main__":
     print(f'The Tmag for TIC ID {tic_id} is {tmag}')
     del phot_data
 
-    dmb_range = [0.5, 1, 1.5]
-    dmf_range = [0.5, 1.5, 2, 2.5]
+    dmb_range = [0.1, 0.5, 1, 1.5]
+    dmf_range = [0.1, 0.5, 1.5, 2, 2.5]
     crop_range = [None, 1000, 1500, 3000, 4000]
     color_lim_range = [0.1, 0.2, 0.4, 0.6, 0.8]
     tolerance = 100
