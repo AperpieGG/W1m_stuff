@@ -54,5 +54,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Execute the main function with parsed arguments
-    main(args.target_file)
+    main(args.target_file, args.bin)
 
