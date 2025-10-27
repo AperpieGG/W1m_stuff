@@ -49,7 +49,7 @@ def main(target_file, bin):
 if __name__ == "__main__":
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Process Light Curve with Wotan")
-    parser.add_argument('target_file', type=str, required=True, help="Path to the target JSON file")
+    parser.add_argument('target_file', type=str, help="Path to the target JSON file")
     parser.add_argument('--bin', type=float, default=5, help='Binning interval in days (default: 0.1677 days ~ 24 min)')
     args = parser.parse_args()
 
