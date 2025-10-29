@@ -184,24 +184,21 @@ def find_best_comps(table, tic_id_to_plot, APERTURE, DM_BRIGHT, DM_FAINT, crop_s
     return good_comp_star_table, airmass  # Return the filtered table including only good comp stars
 
 
-def run_photometry(tic_id, dmb, dmf, crop, color_lim, cam):
+def run_photometry(tic_id, dmb, dmf, crop, color_lim, cam, APERTURE):
     try:
         # (All your main() logic moved here with 'args.dmb' -> dmb etc.)
         # Skip CLI parser and set values directly
         if cam == 'IMX571-HWC':
-            APERTURE = 30
             DC = 0.001
             GAIN = 0.75
             EXPOSURE = 10.0
             RN = 3.16
         elif cam == 'IMX571-LN':
-            APERTURE = 30
             GAIN = 0.25
             DC = 0.001
             EXPOSURE = 10.0
             RN = 1.28
         elif cam == 'IMX571-LN12':
-            APERTURE = 20
             GAIN = 3.85
             DC = 0.001
             EXPOSURE = 10.0
@@ -280,9 +277,11 @@ if __name__ == "__main__":
     parser.add_argument('--tic_id', type=int, required=True, help="Target TIC ID")
     parser.add_argument('--cam', type=str, default='IMX571-HWC',
                         help="Camera type (IMX571-HWC, IMX571-LN, IMX571-LN12)")
+    parser.add_argument('--aper', nargs='+', type=int, default=[10, 20, 30, 40],
+                        help="Apertures to include in parameter search (e.g. --aper 10 20 30 40)")
     args = parser.parse_args()
 
-    tic_id = args.tic_id  # The TIC ID you're interested in
+    tic_id = args.tic_id
 
     # Load the photometry table
     phot_file = get_phot_files('.')  # This returns a list of file names
@@ -290,19 +289,21 @@ if __name__ == "__main__":
 
     # Filter to get the Tmag for the specific TIC ID
     target_row = phot_data[phot_data['tic_id'] == tic_id]
-
     if len(target_row) == 0:
         raise ValueError(f"TIC ID {tic_id} not found in photometry file.")
     tmag = target_row['Tmag'][0]
     print(f'The Tmag for TIC ID {tic_id} is {tmag}')
     del phot_data
 
+    # --- Parameter grids ---
+    APERTURE = args.aper
     dmb_range = [0.1, 0.5, 1, 1.5]
     dmf_range = [0.1, 0.5, 1.5, 2, 2.5]
     crop_range = [None, 1000, 1500, 3000, 4000]
-    color_lim_range = [0.1, 0.2, 0.4, 0.6, 0.8]
+    color_lim_range = [0.1, 0.2, 0.4, 0.6]
     tolerance = 100
 
+    # --- Target RMS based on brightness ---
     if 7.5 < tmag < 9.5:
         dmb_range = [0.0]
         target_rms = 200
@@ -326,39 +327,42 @@ if __name__ == "__main__":
     best_params = None
     found_optimal = False
 
-    for dmb, dmf, crop, color_lim in itertools.product(dmb_range, dmf_range, crop_range, color_lim_range):
-        rms, rms_unbinned = run_photometry(tic_id, dmb, dmf, crop, color_lim, args.cam)
-        print(f"Params for star {tic_id}: dmb={dmb}, dmf={dmf}, crop={crop}, color_lim={color_lim} => RMS: {rms} "
-              f"and RMS Unbinned: {rms_unbinned:.2f}")
+    # --- Unified parameter iteration including aperture ---
+    for aper, dmb, dmf, crop, color_lim in itertools.product(APERTURE, dmb_range, dmf_range, crop_range, color_lim_range):
+        rms, rms_unbinned = run_photometry(tic_id, dmb, dmf, crop, color_lim, args.cam, aper)
+        print(f"[aper={aper}] dmb={dmb}, dmf={dmf}, crop={crop}, color_lim={color_lim} "
+              f"=> RMS: {rms:.2f}, RMS_unbinned: {rms_unbinned:.2f}")
 
         if np.abs(rms - target_rms) <= tolerance:
-            print(f"\n🎯 Found optimal config! RMS = {rms}")
-            print(f"Params => dmb: {dmb}, dmf: {dmf}, crop: {crop}, color_lim: {color_lim}")
+            print(f"\n🎯 Found optimal config! RMS = {rms:.2f} for aperture {aper}")
+            print(f"Params => aper: {aper}, dmb: {dmb}, dmf: {dmf}, crop: {crop}, color_lim: {color_lim}")
             found_optimal = True
             with open("best_params_log.txt", "a") as f:
-                cmd = f"/home/ops/Apergis/W1m_stuff/rel_dev_dev.py {tic_id} --dmb {dmb} --dmf {dmf}"
+                cmd = (f"/home/ops/Apergis/W1m_stuff/rel_dev_dev.py {tic_id} --aper {aper} "
+                       f"--dmb {dmb} --dmf {dmf}")
                 if crop is not None:
                     cmd += f" --crop {crop}"
-                cmd += f" --color {color_lim} --cam {args.cam}  # Found RMS: {rms:.2e} and RMS Unbinned: {rms_unbinned:.2f}\n"
+                cmd += f" --color {color_lim} --cam {args.cam}  # Found RMS: {rms:.2e}, RMS_unbinned: {rms_unbinned:.2f}\n"
                 f.write(cmd)
             break
 
         if rms < best_rms:
             best_rms = rms
-            best_rms_unbinned = rms_unbinned  # <-- store the corresponding unbinned RMS
-            best_params = (dmb, dmf, crop, color_lim)
+            best_rms_unbinned = rms_unbinned
+            best_params = (aper, dmb, dmf, crop, color_lim)
 
+    # --- Final summary ---
     if not found_optimal and best_params is not None:
-        print(f"\n🔍 Best RMS found (not within target tolerance): {best_rms} and unbinned RMS: {best_rms_unbinned:.2f}")
-        print(f"Best parameters: dmb={best_params[0]}, dmf={best_params[1]}, crop={best_params[2]}, "
-              f"color_lim={best_params[3]}")
-
+        print(f"\n🔍 Best RMS found (not within target tolerance): {best_rms:.2f}, RMS_unbinned: {best_rms_unbinned:.2f}")
+        print(f"Best parameters: aper={best_params[0]}, dmb={best_params[1]}, dmf={best_params[2]}, "
+              f"crop={best_params[3]}, color_lim={best_params[4]}")
         with open("best_params_log.txt", "a") as f:
-            cmd = f"/home/ops/Apergis/W1m_stuff/rel_dev_dev.py {tic_id} --dmb {best_params[0]} --dmf {best_params[1]}"
-            if best_params[2] is not None:
-                cmd += f" --crop {best_params[2]}"
-            cmd += (f" --color {best_params[3]} --cam {args.cam}  # Best RMS: {best_rms:.2e} "
-                    f"and RMS Unbinned: {best_rms_unbinned:.2f}\n")
+            cmd = (f"/home/ops/Apergis/W1m_stuff/rel_dev_dev.py {tic_id} "
+                   f"--aper {best_params[0]} --dmb {best_params[1]} --dmf {best_params[2]}")
+            if best_params[3] is not None:
+                cmd += f" --crop {best_params[3]}"
+            cmd += (f" --color {best_params[4]} --cam {args.cam}  # Best RMS: {best_rms:.2e}, "
+                    f"RMS_unbinned: {best_rms_unbinned:.2f}\n")
             f.write(cmd)
     elif not found_optimal:
         print("⚠️ No valid RMS found.")
