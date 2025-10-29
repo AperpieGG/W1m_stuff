@@ -53,6 +53,9 @@ def compute_rms_values(phot_table, args):
         # <-- CHANGED: crop the final 300 data points if possible
         if len(star_data) > 300:
             star_data = star_data[:-300]
+        if len(star_data) < 300:
+            # crop the first 100 data points if less than 300
+            star_data = star_data[100:]
 
         jd_mid = star_data['Time_BJD']
         rel_flux = star_data['Relative_Flux']
