@@ -459,31 +459,26 @@ def main():
 
     # Set parameters based on camera type
     if args.cam == 'CMOS':
-        APERTURE = 5
         DC = 1.6
         GAIN = 1.13
         EXPOSURE = 10.0
         RN = 1.56
     elif args.cam == 'CCD':
-        APERTURE = 3
         GAIN = 2
         DC = 0.00515
         EXPOSURE = 10.0
         RN = 12.9
     elif args.cam == 'IMX571-LN':
-        APERTURE = 30
         GAIN = 0.25
         DC = 0.001
         EXPOSURE = 10.0
         RN = 1.08
     elif args.cam == 'IMX571-HWC':
-        APERTURE = 30
         GAIN = 0.75
         DC = 0.001
         EXPOSURE = 10.0
         RN = 3.16
     elif args.cam == 'IMX571-2':
-        APERTURE = 20
         GAIN = 3.85
         DC = 0.001 * 2
         EXPOSURE = 10.0
