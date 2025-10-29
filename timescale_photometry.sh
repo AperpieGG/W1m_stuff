@@ -23,12 +23,16 @@ with fits.open("$PHOT_FILE") as hdul:
     tic_ids = data['TIC_ID']
     tmags = data['Tmag']
 
-# Filter by Tmag
+# Filter by Tmag range
 mask = (tmags >= $TMAG_Bright) & (tmags <= $TMAG_Faint)
 unique_ids = np.unique(tic_ids[mask])
 
-# Take first 45
-selected_ids = unique_ids[:40]
+# Randomly shuffle and pick up to 40 stars
+np.random.seed(42)  # for reproducibility, remove if you want true randomness
+if len(unique_ids) > 40:
+    selected_ids = np.random.choice(unique_ids, 40, replace=False)
+else:
+    selected_ids = unique_ids
 
 # Print selected TICs, selected count, and full count
 print(" ".join(str(tic) for tic in selected_ids) + "|" + str(len(selected_ids)) + "|" + str(len(unique_ids)))
