@@ -458,6 +458,7 @@ def main():
             print(f"Error reading exclusion file: {e}")
 
     # Set parameters based on camera type
+    APERTURE = args.aper
     if args.cam == 'CMOS':
         DC = 1.6
         GAIN = 1.13
