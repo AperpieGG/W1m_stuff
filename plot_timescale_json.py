@@ -97,30 +97,53 @@ def plot_timescale(times, rms_values, RMS_model, title):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Aggregate RMS vs time binning from all JSON files")
+    parser = argparse.ArgumentParser(description="Aggregate RMS vs time binning from JSON files")
     parser.add_argument('--bin', type=int, default=180, help='Max binning size')
     parser.add_argument('--exp', type=int, default=10, help='Exposure time in seconds')
-    parser.add_argument('--tic_id', type=str, help='Optional TIC ID to plot individually')
+    parser.add_argument('--json_file', type=str, help='Optional single JSON file to analyze (e.g., target_TIC236435110.json)')
     args = parser.parse_args()
 
-    phot_table = load_all_jsons_as_table()
+    if args.json_file:
+        # --- Analyze a single JSON file ---
+        json_file = args.json_file
+        try:
+            with open(json_file, "r") as f:
+                data = json.load(f)
 
-    if args.tic_id:
-        # plot only for a specific TIC_ID
-        tic_id = args.tic_id
-        if tic_id not in np.unique(phot_table['TIC_ID']):
-            print(f"TIC {tic_id} not found in JSON files.")
-        else:
-            star_data = phot_table[phot_table['TIC_ID'] == tic_id]
+            if isinstance(data, list):
+                data = data[0]
+
+            print(f"Loaded single file: {json_file} (TIC {data['TIC_ID']})")
+
+            # Convert JSON data to arrays
+            time_bjd = np.array(data["Time_BJD"])
+            rel_flux = np.array(data["Relative_Flux"])
+            rel_flux_err = np.array(data["Relative_Flux_err"])
+
+            # Create a small astropy Table-like structure
+            star_data = Table({
+                "Time_BJD": time_bjd,
+                "Relative_Flux": rel_flux,
+                "Relative_Flux_err": rel_flux_err,
+            })
+
+            # Compute RMS for this single star
             times, rms_values = compute_rms_for_star(star_data, args.bin, args.exp)
             rms_values_ppm = rms_values * 1e6
             RMS_model = rms_values_ppm[0] / np.sqrt(np.arange(1, args.bin))
-            plot_timescale(times, rms_values_ppm, RMS_model, f"TIC {tic_id} RMS vs Timescale")
+
+            plot_timescale(times, rms_values_ppm, RMS_model, f"{json_file} RMS vs Timescale")
+
+        except FileNotFoundError:
+            print(f"Error: File '{json_file}' not found.")
+        except Exception as e:
+            print(f"Error processing file '{json_file}': {e}")
+
     else:
-        # default: median over all stars
+        # --- Default: process all JSONs in directory ---
+        phot_table = load_all_jsons_as_table()
         times, avg_rms, RMS_model = compute_rms_values(phot_table, args=args)
 
-        # Save results
         output_data = {
             "Time_Binned": times,
             "Median_RMS_ppm": avg_rms.tolist(),
