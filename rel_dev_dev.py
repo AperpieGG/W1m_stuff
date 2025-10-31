@@ -436,7 +436,7 @@ def main():
     # Add parse for tic_id_to_plot
     parser = argparse.ArgumentParser(description='Plot light curves for a given TIC ID.')
     parser.add_argument('tic_id', type=int, help='TIC ID to plot the light curve for.')
-    parser.add_argument('--aper', type=int, default=5, help='Aperture number to use for photometry.')
+    parser.add_argument('--aper', type=float, default=5, help='Aperture number to use for photometry.')
     parser.add_argument('--cam', type=str, default='CMOS', help='Aperture number to use for photometry.')
     parser.add_argument('--pos', action='store_true', help='Plot comp stars positions on the image.')
     parser.add_argument('--dmb', type=float, default=0.5, help='Brighter comparison star threshold (default: 0.5 mag)')
